@@ -105,16 +105,6 @@ barchart = px.bar(
 
 # CUSTOMIZE LAYOUT
 layout = html.Div([
-    html.Div(
-        [html.A(html.Img(src='./assets/images/tacc-white.png', className='header-img'), href='https://www.tacc.utexas.edu/'),
-         html.Span(className='branding-seperator'),
-         html.A(html.Img(src='./assets/images/utaustin-white.png', className='header-img'), href='https://www.utexas.edu/')],
-        id='header'
-    ),
-    html.Div(
-        [html.A(html.Img(src='./assets/images/utrc-horizontal-logo-white-simple.svg', className='utrc-logo'), href='https://utrc.tacc.utexas.edu/')],
-        id='header2'
-    ),
     html.Div([
         html.Div([
             dcc.Dropdown(id='dropdown',

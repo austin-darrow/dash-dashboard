@@ -26,6 +26,18 @@ html, body {
     height: 55px;
     border-bottom: 1px solid #afafaf;
     padding-left: 30px;
+    gap: 3rem;
+    font-size: 1.5rem;
+}
+
+#header2>a {
+    color: #afafaf;
+    text-decoration: none;
+}
+
+#header2>a:hover {
+    font-size: 1.6rem;
+    color: #ffffff;
 }
 
 .header-img {
