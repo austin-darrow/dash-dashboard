@@ -1,20 +1,7 @@
 import pandas as pd
+import logging
 
-workbook = "./assets/data/utrc_report_2021-09-01_to_2021-10-01.xlsx"
-worksheets = [
-    'utrc_active_allocations', # 0
-    'utrc_individual_user_hpc_usage', # 1
-    'utrc_corral_usage', # 2
-    'utrc_current_allocations', # 3
-    'utrc_new_pis', # 4
-    'utrc_new_allocation_requests', # 5
-    'utrc_new_users', # 6
-    'utrc_idle_users', # 7
-    'utrc_suspended_users', # 8
-    'utrc_new_grants', # 9
-    'utrc_new_publications', # 10
-    'utrc_institution_accounts' # 11
-]
+logging.basicConfig(level=logging.DEBUG)
 
 INSTITUTIONS = {
     'University of Texas at Austin': 'UTAus',
@@ -73,18 +60,34 @@ INSTITUTIONS = {
     'University of Texas Tyler': 'UTT',
 }
 
-df = pd.read_excel(workbook, worksheets[6])
+WORKSHEETS = [
+    'utrc_active_allocations', # 0
+    'utrc_individual_user_hpc_usage', # 1
+    'utrc_corral_usage', # 2
+    'utrc_current_allocations', # 3
+    'utrc_new_pis', # 4
+    'utrc_new_allocation_requests', # 5
+    'utrc_new_users', # 6
+    'utrc_idle_users', # 7
+    'utrc_suspended_users', # 8
+    'utrc_new_grants', # 9
+    'utrc_new_publications', # 10
+    'utrc_institution_accounts' # 11
+]
 
-#df = df.groupby(['root_institution_name'], as_index=False)['account_type'].sum()
-#print("Total: " + df.sum())
-# print(df.shape[0]) # Get count of rows
-# df = df.groupby(['root_institution_name'])['root_institution_name'].count() # Get count of rows, grouped by institution
-# print(df.sort_values(ascending=False)) # Sorted
+PROTECTED_COLUMNS = [
+    'email',
+    'Email',
+    'login',
+    'Login',
+    'account_id',
+    'Account ID',
+    'project_pi_email',
+    'PI Email'
+]
 
-for i in range(len(df)):
-    df.loc[i, "root_institution_name"] = INSTITUTIONS[df.loc[i, "root_institution_name"]]
-
-df = df.rename({'root_institution_name': 'Institution',
+def clean_df(df):
+    df = df.rename({'root_institution_name': 'Institution',
                 'last_name': 'Last Name',
                 'first_name': 'First Name',
                 'email': 'Email',
@@ -130,4 +133,25 @@ df = df.rename({'root_institution_name': 'Institution',
                 'account_status': 'Account Status'
             }, axis='columns')
 
-print(df.loc[0])
+    for i in range(len(df)):
+        df.loc[i, "Institution"] = INSTITUTIONS[df.loc[i, "Institution"]]
+    
+    return df
+
+def select_df(workbook, dropdown_selection, authenticated=False):
+    if dropdown_selection == 'new_users':
+        df = pd.read_excel(workbook, WORKSHEETS[6])
+    elif dropdown_selection == 'idle_users':
+        df = pd.read_excel(workbook, WORKSHEETS[7])
+    elif dropdown_selection == 'suspended_users':
+        df = pd.read_excel(workbook, WORKSHEETS[8])
+
+    if authenticated==False:
+        for column in PROTECTED_COLUMNS:
+            try:
+                df = df.drop(columns=column)
+            except Exception as e:
+                logging.debug(e)
+                continue
+
+    return df
