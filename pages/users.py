@@ -39,10 +39,11 @@ layout = html.Div([
 @app.callback(
     Output('table', 'children'),
     Output('bargraph', 'children'),
-    Input('dropdown', 'value')
+    Input('dropdown', 'value'),
+    Input('hidden-login', 'data')
 )
-def update_table(dropdown):
-    df = select_df(WORKBOOK, dropdown, False)
+def update_table(dropdown, authentication):
+    df = select_df(WORKBOOK, dropdown, authentication)
 
     df = clean_df(df)
     

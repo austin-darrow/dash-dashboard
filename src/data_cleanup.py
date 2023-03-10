@@ -150,7 +150,7 @@ def select_df(workbook, dropdown_selection, authenticated=False):
         for column in PROTECTED_COLUMNS:
             try:
                 df = df.drop(columns=column)
-            except Exception as e:
+            except Exception as e: # Throws error if column name isn't in specific worksheets
                 logging.debug(e)
                 continue
 

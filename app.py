@@ -1,6 +1,7 @@
 import dash
-from dash import html, dcc
+from dash import html, dcc, Input, Output, State
 import logging
+from src.authenticator import authenticate
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -17,15 +18,31 @@ app.layout = html.Div([
     html.Div(
         [html.A(html.Img(src='./assets/images/utrc-horizontal-logo-white-simple.svg', className='utrc-logo'), href='https://utrc.tacc.utexas.edu/'),
          html.A("Home", href='/'),
-         html.A("Users", href='/users')
+         html.A("Users", href='/users'),
+         dcc.Input(id='username', type='text', placeholder='username'),
+         dcc.Input(id='password', type='text', placeholder='password'),
+         html.Button('Login', id='login', n_clicks=0)
 	    ],
         id='header2'
 	),
-	dash.page_container,
+	dcc.Store(id='hidden-login', storage_type='local'),
+	dash.page_container
 ])
 
 for page in dash.page_registry.values():
 	logging.debug((f"{page['name']} - {page['path']}"))
+	
+
+@app.callback(
+	Output('hidden-login', 'data'),
+	Input('login', 'n_clicks'),
+	State('username', 'value'),
+	State('password', 'value')
+)
+def login(n_clicks, username, password):
+	if n_clicks is not None:
+		authentication = authenticate(username, password)
+		return authentication
 
 if __name__ == '__main__':
 	app.run(host='0.0.0.0', debug=True)
