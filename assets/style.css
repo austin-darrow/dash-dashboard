@@ -30,6 +30,37 @@ html, body {
     font-size: 1.5rem;
 }
 
+#login-form {
+    margin-left: auto;
+    margin-right: 30px;
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    align-items: center;
+}
+
+#login {
+    background-color: #222222;
+    border: none;
+    height: 30px;
+    width: 90px;
+    color: #ffffff;
+    font-size: 1.25rem;
+}
+
+#username, #password {
+    border-radius: 4px;
+    height: 30px;
+    width: 12rem;
+    padding-left: 1rem;
+    font-size: 1.25rem;
+    color: black;
+}
+
+#login:hover, #username:hover, #password:hover {
+    font-size: 1.35rem;
+}
+
 #header2>a {
     color: #afafaf;
     text-decoration: none;
