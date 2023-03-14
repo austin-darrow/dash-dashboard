@@ -107,7 +107,7 @@ def clean_df(df):
                 'users': 'User Count',
                 'New PI?': 'New PI?',
                 'New User?': 'New User?',
-                'Suspended User?': 'Suspended User?',
+                'Suspended User?': 'Suspended?',
                 'name': 'Name',
                 'start_date': 'Start Date',
                 'end_date': 'End Date',
@@ -138,13 +138,21 @@ def clean_df(df):
     
     return df
 
-def select_df(workbook, dropdown_selection, authenticated=False):
-    if dropdown_selection == 'new_users':
-        df = pd.read_excel(workbook, WORKSHEETS[6])
+def filter_df(df, checklist):
+    filtered_df = df[df['Institution'].isin(checklist)]
+
+    return filtered_df
+
+def select_df(workbook, dropdown_selection, checklist, authenticated=False):
+    if dropdown_selection == 'active_users':
+        worksheet = 1
+    elif dropdown_selection == 'new_users':
+        worksheet = 6
     elif dropdown_selection == 'idle_users':
-        df = pd.read_excel(workbook, WORKSHEETS[7])
+        worksheet = 7
     elif dropdown_selection == 'suspended_users':
-        df = pd.read_excel(workbook, WORKSHEETS[8])
+        worksheet = 8
+    df = pd.read_excel(workbook, WORKSHEETS[worksheet])
 
     if authenticated==False:
         for column in PROTECTED_COLUMNS:
@@ -154,4 +162,33 @@ def select_df(workbook, dropdown_selection, authenticated=False):
                 logging.debug(e)
                 continue
 
+    df = clean_df(df)
+    df = filter_df(df, checklist)
+
     return df
+
+def get_totals(workbook, checklist):
+    totals = {'active_users': 0, 'idle_users': 0, 'total_users': 0}
+    for worksheet in [1, 7]:
+        df = pd.read_excel(workbook, WORKSHEETS[worksheet])
+        df = clean_df(df)
+        filtered_df = filter_df(df, checklist)
+        user_count = filtered_df.shape[0]
+
+        if worksheet == 1:
+            totals['active_users'] = user_count
+        elif worksheet == 7:
+            totals['idle_users'] = user_count
+
+    totals['total_users'] = totals['active_users'] + totals['idle_users']
+    return totals
+
+def create_conditional_style(df):
+    style=[]
+    for col in df.columns:
+        name_length = len(col)
+        pixel = 50 + round(name_length*5)
+        pixel = str(pixel) + "px"
+        style.append({'if': {'column_id': col}, 'minWidth': pixel})
+
+    return style

@@ -130,4 +130,5 @@ df = df.rename({'root_institution_name': 'Institution',
                 'account_status': 'Account Status'
             }, axis='columns')
 
-print(df.loc[0])
+for i in df['Institution']:
+    print(i)

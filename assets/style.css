@@ -1,3 +1,4 @@
+/* MAIN DOCUMENT */
 html, body {
     margin: 0;
     padding: 0;
@@ -7,6 +8,7 @@ html, body {
     font-family: Roboto,sans-serif;
 }
 
+/* HEADER */
 #header {
     background-color: #222222;
     display: flex;
@@ -62,7 +64,7 @@ html, body {
 }
 
 #header2>a {
-    color: #afafaf;
+    color: #ffffff;
     text-decoration: none;
 }
 
@@ -88,8 +90,19 @@ html, body {
     vertical-align: middle;
 }
 
+/* OVERALL BODY STYLING */
+.body {
+    padding: 0.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* ==================SPECIFIC BODY COMPONENTS================== */
+/* DataTable */
 #table {
     width: auto;
+    border: 1px solid #222222;
 }
 
 .cell-table {
@@ -102,7 +115,7 @@ html, body {
 }
 
 .dash-cell {
-    min-width: 100px;
+    min-width: 175px;
 }
 
 th.dash-header.column-0 {
@@ -111,6 +124,53 @@ th.dash-header.column-0 {
     background-color: #222222;
 }
 
-.body {
-    padding: 0.5rem 2rem;
+/* Select Institutions Checklist */
+#select_institutions_div {
+    border: 1px solid #222222;
+    padding: 0.75rem;
+}
+
+#select_institutions_checklist {
+    display: flex;
+    gap: 1rem;
+}
+
+/* Histogram */
+#bargraph {
+    border: 1px solid #222222;
+}
+
+/* Date Range Selector */
+#date_range_selector {
+    border: 1px solid #222222;
+    padding: 1rem;
+}
+
+/* Total Counters */
+#total_counters_wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    width: 40rem;
+    background-color: #222222;
+    border: 1px solid #222222;
+    border-radius: 8px;
+}
+
+.total_counters {
+    height: 10rem;
+    width: 10rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    font-size: 1.5rem;
+    color: #ffffff;
+}
+
+.counter_title {
+    font-size: 1.75rem;
+    color: gainsboro;
+    border-bottom: 1px solid #ffffff;
 }
