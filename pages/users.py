@@ -3,7 +3,7 @@ import plotly.express as px
 
 import dash
 from dash import dcc, Output, Input, html, dash_table
-from src.data_cleanup import select_df, get_totals
+from src.data_cleanup import clean_df, select_df, get_totals
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
@@ -13,6 +13,22 @@ app = dash.get_app()
 
 # INCORPORATE DATA
 WORKBOOK = "./assets/data/utrc_report_2021-09-01_to_2021-10-01.xlsx"
+
+def initialize_df(workbook):
+    """
+    To keep the dashboard running quickly, data should be read in only once.
+    """
+    dataframes = pd.read_excel(workbook, ['utrc_individual_user_hpc_usage', 'utrc_new_users', 'utrc_idle_users', 'utrc_suspended_users'])
+    for worksheet in dataframes:
+        try:
+            dataframes[worksheet] = clean_df(dataframes[worksheet])
+        except:
+            continue
+
+    return dataframes
+
+DATAFRAMES = initialize_df(WORKBOOK)
+logging.debug(len(DATAFRAMES))
 
 # CUSTOMIZE LAYOUT
 layout = html.Div([
@@ -56,12 +72,12 @@ layout = html.Div([
         html.Div([
             dcc.Dropdown(id='dropdown',
                         options=[
-                            {'label': 'Active Users', 'value': 'active_users'},
-                            {'label': 'New Users', 'value': 'new_users'},
-                            {'label': 'Idle Users', 'value': 'idle_users'},
-                            {'label': 'Suspended Users', 'value': 'suspended_users'}
+                            {'label': 'Active Users', 'value': 'utrc_individual_user_hpc_usage'},
+                            {'label': 'New Users', 'value': 'utrc_new_users'},
+                            {'label': 'Idle Users', 'value': 'utrc_idle_users'},
+                            {'label': 'Suspended Users', 'value': 'utrc_suspended_users'}
                         ],
-                        value='active_users',
+                        value='utrc_individual_user_hpc_usage',
                         clearable=False
             ),
         ],),
@@ -84,7 +100,7 @@ layout = html.Div([
     Input('select_institutions_checklist', 'value')
 )
 def update_figs(dropdown, authentication, checklist):
-    df = select_df(WORKBOOK, dropdown, checklist, authentication)
+    df = select_df(DATAFRAMES, dropdown, checklist, authentication)
     
     table = dash_table.DataTable(id='datatable_id',
                              data=df.to_dict('records'),
@@ -109,11 +125,18 @@ def update_figs(dropdown, authentication, checklist):
                 color='Institution'
             ))
     
-    totals = get_totals(WORKBOOK, checklist)
+    totals = get_totals(DATAFRAMES, checklist)
 
 
     return table, bargraph, totals['active_users'], totals['idle_users'], totals['total_users']
 
+
+
+
+
+
+
+########## Utility methods ##########
 def create_conditional_style(df):
     """
     Necessary workaround for a Plotly Dash bug where table headers are cut off if row data is shorter than the header.

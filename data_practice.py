@@ -73,7 +73,11 @@ INSTITUTIONS = {
     'University of Texas Tyler': 'UTT',
 }
 
-df = pd.read_excel(workbook, worksheets[6])
+df = pd.read_excel(workbook, sheet_name=None)
+df['utrc_suspended_users'].to_html('suspended.html')
+df = pd.read_excel(workbook, 'utrc_suspended_users')
+df.to_html('suspended2.html')
+new_users_df = df['utrc_new_users']
 
 #df = df.groupby(['root_institution_name'], as_index=False)['account_type'].sum()
 #print("Total: " + df.sum())
@@ -82,9 +86,9 @@ df = pd.read_excel(workbook, worksheets[6])
 # print(df.sort_values(ascending=False)) # Sorted
 
 for i in range(len(df)):
-    df.loc[i, "root_institution_name"] = INSTITUTIONS[df.loc[i, "root_institution_name"]]
+    new_users_df.loc[i, "root_institution_name"] = INSTITUTIONS[new_users_df.loc[i, "root_institution_name"]]
 
-df = df.rename({'root_institution_name': 'Institution',
+new_users_df = new_users_df.rename({'root_institution_name': 'Institution',
                 'last_name': 'Last Name',
                 'first_name': 'First Name',
                 'email': 'Email',
@@ -129,6 +133,3 @@ df = df.rename({'root_institution_name': 'Institution',
                 'publisher': 'Publisher',
                 'account_status': 'Account Status'
             }, axis='columns')
-
-for i in df['Institution']:
-    print(i)

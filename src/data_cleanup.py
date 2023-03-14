@@ -60,21 +60,6 @@ INSTITUTIONS = {
     'University of Texas Tyler': 'UTT',
 }
 
-WORKSHEETS = [
-    'utrc_active_allocations', # 0
-    'utrc_individual_user_hpc_usage', # 1
-    'utrc_corral_usage', # 2
-    'utrc_current_allocations', # 3
-    'utrc_new_pis', # 4
-    'utrc_new_allocation_requests', # 5
-    'utrc_new_users', # 6
-    'utrc_idle_users', # 7
-    'utrc_suspended_users', # 8
-    'utrc_new_grants', # 9
-    'utrc_new_publications', # 10
-    'utrc_institution_accounts' # 11
-]
-
 PROTECTED_COLUMNS = [
     'email',
     'Email',
@@ -143,16 +128,8 @@ def filter_df(df, checklist):
 
     return filtered_df
 
-def select_df(workbook, dropdown_selection, checklist, authenticated=False):
-    if dropdown_selection == 'active_users':
-        worksheet = 1
-    elif dropdown_selection == 'new_users':
-        worksheet = 6
-    elif dropdown_selection == 'idle_users':
-        worksheet = 7
-    elif dropdown_selection == 'suspended_users':
-        worksheet = 8
-    df = pd.read_excel(workbook, WORKSHEETS[worksheet])
+def select_df(DATAFRAMES, dropdown_selection, checklist, authenticated=False):
+    df = DATAFRAMES[dropdown_selection]
 
     if authenticated==False:
         for column in PROTECTED_COLUMNS:
@@ -162,22 +139,20 @@ def select_df(workbook, dropdown_selection, checklist, authenticated=False):
                 logging.debug(e)
                 continue
 
-    df = clean_df(df)
     df = filter_df(df, checklist)
 
     return df
 
-def get_totals(workbook, checklist):
+def get_totals(DATAFRAMES, checklist):
     totals = {'active_users': 0, 'idle_users': 0, 'total_users': 0}
-    for worksheet in [1, 7]:
-        df = pd.read_excel(workbook, WORKSHEETS[worksheet])
-        df = clean_df(df)
+    for worksheet in ['utrc_individual_user_hpc_usage', 'utrc_idle_users']:
+        df = DATAFRAMES[worksheet]
         filtered_df = filter_df(df, checklist)
         user_count = filtered_df.shape[0]
 
-        if worksheet == 1:
+        if worksheet == 'utrc_individual_user_hpc_usage':
             totals['active_users'] = user_count
-        elif worksheet == 7:
+        elif worksheet == 'utrc_idle_users':
             totals['idle_users'] = user_count
 
     totals['total_users'] = totals['active_users'] + totals['idle_users']
