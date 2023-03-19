@@ -3,7 +3,7 @@ import plotly.express as px
 
 import dash
 from dash import dcc, Output, Input, html, dash_table
-from src.data_cleanup import clean_df, select_df, get_totals
+from src.data_cleanup import clean_df, select_df, get_totals, append_date_to_worksheets, get_workbook_paths
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
@@ -12,61 +12,77 @@ dash.register_page(__name__)
 app = dash.get_app()
 
 # INCORPORATE DATA
-WORKBOOK = "./assets/data/utrc_report_2021-09-01_to_2021-10-01.xlsx"
 
-def initialize_df(workbook):
+def initialize_df(workbook_path):
     """
     To keep the dashboard running quickly, data should be read in only once.
     """
-    dataframes = pd.read_excel(workbook, ['utrc_individual_user_hpc_usage', 'utrc_new_users', 'utrc_idle_users', 'utrc_suspended_users'])
+    dataframes = pd.read_excel(workbook_path, ['utrc_individual_user_hpc_usage', 'utrc_new_users', 'utrc_idle_users', 'utrc_suspended_users'])
     for worksheet in dataframes:
-        try:
-            dataframes[worksheet] = clean_df(dataframes[worksheet])
-        except:
-            continue
+        dataframes[worksheet] = clean_df(dataframes[worksheet])
 
     return dataframes
 
-DATAFRAMES = initialize_df(WORKBOOK)
-logging.debug(len(DATAFRAMES))
+def merge_workbooks():
+    workbook_paths = get_workbook_paths('./assets/data/monthly_reports')
+    for index, path in enumerate(workbook_paths):
+        workbook = initialize_df(path)
+        filename = path.split('/')[-1]
+        workbook = append_date_to_worksheets(workbook, filename)
+
+        if index == 0:
+            dict_of_dfs = workbook
+        else:
+            for sheet in ['utrc_individual_user_hpc_usage', 'utrc_new_users', 'utrc_idle_users', 'utrc_suspended_users']:
+                dict_of_dfs[sheet] = pd.concat([dict_of_dfs[sheet], workbook[sheet]])
+
+    # for df in dict_of_dfs:
+    #     dict_of_dfs[df] = dict_of_dfs[df].drop_duplicates(subset=['Login'])
+
+    return dict_of_dfs
+
+DATAFRAMES = merge_workbooks()
+
 
 # CUSTOMIZE LAYOUT
 layout = html.Div([
     html.Div([
         html.Div([
-            "Select institutions to display:",
-            dcc.Checklist(
-                id='select_institutions_checklist',
-                options=[
-                    {'label': 'UTA', 'value': 'UTA'},
-                    {'label': 'UTAus', 'value': 'UTAus'},
-                    {'label': 'UTHSC-SA', 'value': 'UTHSC-SA'},
-                    {'label': 'UTSW', 'value': 'UTSW'},
-                    {'label': 'UTHSC-H', 'value': 'UTHSC-H'},
-                    {'label': 'UTMDA', 'value': 'UTMDA'},
-                    {'label': 'UTRGV', 'value': 'UTRGV'},
-                    {'label': 'UTMB', 'value': 'UTMB'},
-                    {'label': 'UTD', 'value': 'UTD'},
-                    {'label': 'UTSA', 'value': 'UTSA'},
-                    {'label': 'UTEP', 'value': 'UTEP'},
-                    {'label': 'UTPB', 'value': 'UTPB'},
-                    {'label': 'UTT', 'value': 'UTT'},
-                    {'label': 'UTSYS', 'value': 'UTSYS'}
-                ],
-                value=['UTA', 'UTAus', 'UTHSC-SA', 'UTSW', 'UTHSC-H', 'UTMDA', 'UTRGV', 'UTMB', 'UTD', 'UTSA', 'UTEP', 'UTT', 'UTSYS', 'UTPB'],
-                persistence=True,
-                persistence_type='session'
-            ),
-        ], id='select_institutions_div'),
+            "Select Filters",
+            html.Div([
+                "By institution:",
+                dcc.Checklist(
+                    id='select_institutions_checklist',
+                    options=[
+                        {'label': 'UTA', 'value': 'UTA'},
+                        {'label': 'UTAus', 'value': 'UTAus'},
+                        {'label': 'UTHSC-SA', 'value': 'UTHSC-SA'},
+                        {'label': 'UTSW', 'value': 'UTSW'},
+                        {'label': 'UTHSC-H', 'value': 'UTHSC-H'},
+                        {'label': 'UTMDA', 'value': 'UTMDA'},
+                        {'label': 'UTRGV', 'value': 'UTRGV'},
+                        {'label': 'UTMB', 'value': 'UTMB'},
+                        {'label': 'UTD', 'value': 'UTD'},
+                        {'label': 'UTSA', 'value': 'UTSA'},
+                        {'label': 'UTEP', 'value': 'UTEP'},
+                        {'label': 'UTPB', 'value': 'UTPB'},
+                        {'label': 'UTT', 'value': 'UTT'},
+                        {'label': 'UTSYS', 'value': 'UTSYS'}
+                    ],
+                    value=['UTA', 'UTAus', 'UTHSC-SA', 'UTSW', 'UTHSC-H', 'UTMDA', 'UTRGV', 'UTMB', 'UTD', 'UTSA', 'UTEP', 'UTT', 'UTSYS', 'UTPB'],
+                    persistence=True,
+                    persistence_type='session'
+                ),
+            ], id='select_institutions_div'),
 
-        html.Div([
-            "Select date range (slider?)",
-        ], id='date_range_selector'),
+            html.Div([
+                "By date:",
+            ], id='date_range_selector'),], id='filters'),
         
         html.Div([
             html.Div([html.Div(["Total Users"], className='counter_title'), html.Div([0], id='total_users')], className="total_counters"),
-            html.Div([html.Div(["Active Users"], className='counter_title'), html.Div([0], id='active_users')], className="total_counters"),
-            html.Div([html.Div(["Idle Users"], className='counter_title'), html.Div([0], id="idle_users")], className="total_counters"),
+            html.Div([html.Div(["Active"], className='counter_title'), html.Div([0], id='active_users')], className="total_counters"),
+            html.Div([html.Div(["Idle"], className='counter_title'), html.Div([0], id="idle_users")], className="total_counters"),
         ], id='total_counters_wrapper'),
 
         html.Div([
@@ -122,7 +138,9 @@ def update_figs(dropdown, authentication, checklist):
     bargraph = dcc.Graph(figure=px.histogram(
                 data_frame=df,
                 x="Institution",
-                color='Institution'
+                color='Date',
+                barmode='group',
+                text_auto=True
             ))
     
     totals = get_totals(DATAFRAMES, checklist)

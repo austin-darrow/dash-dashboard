@@ -99,6 +99,43 @@ html, body {
 }
 
 /* ==================SPECIFIC BODY COMPONENTS================== */
+/* Filters */
+#filters {
+    padding: 12px;
+    border: 1px solid #222222;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    color: #ffffff;
+    background-color: #222222;
+    font-size: 1.25rem;
+    border: 1px solid #222222;
+    border-radius: 8px;
+}
+
+/* Select Institutions Checklist */
+#select_institutions_div {
+    border: 1px solid #222222;
+    padding: 0.75rem;
+    background-color: #ffffff;
+    color: #222222;
+    font-size: 1rem;
+}
+
+#select_institutions_checklist {
+    display: flex;
+    gap: 1rem;
+}
+
+/* Date Range Selector */
+#date_range_selector {
+    border: 1px solid #222222;
+    padding: 1rem;
+    background-color: #ffffff;
+    color: #222222;
+    font-size: 1rem;
+}
+
 /* DataTable */
 #table {
     width: auto;
@@ -124,26 +161,9 @@ th.dash-header.column-0 {
     background-color: #222222;
 }
 
-/* Select Institutions Checklist */
-#select_institutions_div {
-    border: 1px solid #222222;
-    padding: 0.75rem;
-}
-
-#select_institutions_checklist {
-    display: flex;
-    gap: 1rem;
-}
-
 /* Histogram */
 #bargraph {
     border: 1px solid #222222;
-}
-
-/* Date Range Selector */
-#date_range_selector {
-    border: 1px solid #222222;
-    padding: 1rem;
 }
 
 /* Total Counters */

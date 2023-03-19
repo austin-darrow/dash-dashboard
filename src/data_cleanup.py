@@ -1,5 +1,8 @@
 import pandas as pd
 import logging
+from os import walk
+import re
+from datetime import datetime
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -21,6 +24,7 @@ INSTITUTIONS = {
     'University of Texas of the Permian Basin': 'UTPB',
     'University of Texas Rio Grande Valley': 'UTRGV',
     'The University of Texas - Rio Grande Valley': 'UTRGV',
+    'The University of Texas Rio Grande Valley': 'UTRGV',
     'University of Texas - Rio Grande Valley': 'UTRGV',
     'University of Texas at San Antonio': 'UTSA',
     'The University of Texas at San Antonio': 'UTSA',
@@ -60,6 +64,53 @@ INSTITUTIONS = {
     'University of Texas Tyler': 'UTT',
 }
 
+COLUMN_HEADERS = {
+    'root_institution_name': 'Institution',
+    'last_name': 'Last Name',
+    'first_name': 'First Name',
+    'email': 'Email',
+    'login': 'Login',
+    'account_id': 'Account ID',
+    'account_type': 'Account Type',
+    'active_date': 'Active Date',
+    'changed': 'Changed',
+    'comment': 'Comment',
+    'resource_name': 'Resource',
+    'resource_type': 'Type',
+    'project_name': 'Project Name',
+    'title': 'Title',
+    'project_type': 'Project Type',
+    'jobs': 'Job Count',
+    'sus_charged': 'SU\'s Charged',
+    'users': 'User Count',
+    'New PI?': 'New PI?',
+    'New User?': 'New User?',
+    'Suspended User?': 'Suspended?',
+    'name': 'Name',
+    'start_date': 'Start Date',
+    'end_date': 'End Date',
+    'status': 'Status',
+    'storage_granted_gb': 'Storage Granted (Gb)',
+    'total_granted': 'Total Granted',
+    'total_refunded': 'Total Refunded',
+    'total_used': 'Total Used',
+    'balance': 'Balance',
+    'Idle Allocation?': 'Idle Allocation?',
+    'primary_field': 'Primary Field',
+    'secondary_field': 'Secondary Field',
+    'grant_title': 'Grant Title',
+    'funding_agency': 'Funding Agency',
+    'pi_name': 'PI Name',
+    'project_pi_last_name': 'PI Last Name',
+    'project_pi_first_name': 'PI First Name',
+    'project_pi_email': 'PI Email',
+    'project_title': 'Project Title',
+    'publication_id': 'Publication ID',
+    'year_published': 'Year Published',
+    'publisher': 'Publisher',
+    'account_status': 'Account Status'
+}
+
 PROTECTED_COLUMNS = [
     'email',
     'Email',
@@ -71,53 +122,40 @@ PROTECTED_COLUMNS = [
     'PI Email'
 ]
 
-def clean_df(df):
-    df = df.rename({'root_institution_name': 'Institution',
-                'last_name': 'Last Name',
-                'first_name': 'First Name',
-                'email': 'Email',
-                'login': 'Login',
-                'account_id': 'Account ID',
-                'account_type': 'Account Type',
-                'active_date': 'Active Date',
-                'changed': 'Changed',
-                'comment': 'Comment',
-                'resource_name': 'Resource',
-                'resource_type': 'Type',
-                'project_name': 'Project Name',
-                'title': 'Title',
-                'project_type': 'Project Type',
-                'jobs': 'Job Count',
-                'sus_charged': 'SU\'s Charged',
-                'users': 'User Count',
-                'New PI?': 'New PI?',
-                'New User?': 'New User?',
-                'Suspended User?': 'Suspended?',
-                'name': 'Name',
-                'start_date': 'Start Date',
-                'end_date': 'End Date',
-                'status': 'Status',
-                'storage_granted_gb': 'Storage Granted (Gb)',
-                'total_granted': 'Total Granted',
-                'total_refunded': 'Total Refunded',
-                'total_used': 'Total Used',
-                'balance': 'Balance',
-                'Idle Allocation?': 'Idle Allocation?',
-                'primary_field': 'Primary Field',
-                'secondary_field': 'Secondary Field',
-                'grant_title': 'Grant Title',
-                'funding_agency': 'Funding Agency',
-                'pi_name': 'PI Name',
-                'project_pi_last_name': 'PI Last Name',
-                'project_pi_first_name': 'PI First Name',
-                'project_pi_email': 'PI Email',
-                'project_title': 'Project Title',
-                'publication_id': 'Publication ID',
-                'year_published': 'Year Published',
-                'publisher': 'Publisher',
-                'account_status': 'Account Status'
-            }, axis='columns')
+def get_workbook_paths(directory):
+    f = []
+    for (dirpath, _, filenames) in walk(directory):
+        for filename in filenames:
+            f.append(dirpath + "/" + filename)
+        break
+    return f
 
+def append_date_to_worksheets(workbook, filename):
+    for worksheet in workbook:
+        workbook[worksheet]['Date'] = get_date_from_filename(filename)
+    return workbook
+
+def get_date_from_filename(filename, prefix='utrc_report'):
+    # utrc_report_2017-01-01_to_2017-02-01.xlsx
+    pattern = re.compile('{}_(.*)_to_(.*).xlsx'.format(prefix))
+    match = pattern.match(filename)
+    series_date = ''
+    if match:
+        start_date_str = match.group(1)
+        date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        series_date = date.strftime('%y-%m')
+    return series_date
+
+def clean_df(df):
+    # Rename worksheet table headers
+    for header in COLUMN_HEADERS:
+        try:
+            df = df.rename({header: COLUMN_HEADERS[header]}, axis='columns')
+        except:
+            logging.debug(Exception)
+            continue
+
+    # Replace full institution names with abbreviations
     for i in range(len(df)):
         df.loc[i, "Institution"] = INSTITUTIONS[df.loc[i, "Institution"]]
     
@@ -125,6 +163,7 @@ def clean_df(df):
 
 def filter_df(df, checklist):
     filtered_df = df[df['Institution'].isin(checklist)]
+    filtered_df = filtered_df.sort_values(['Date', 'Institution'])
 
     return filtered_df
 
@@ -144,11 +183,12 @@ def select_df(DATAFRAMES, dropdown_selection, checklist, authenticated=False):
     return df
 
 def get_totals(DATAFRAMES, checklist):
-    totals = {'active_users': 0, 'idle_users': 0, 'total_users': 0}
+    totals = {}
     for worksheet in ['utrc_individual_user_hpc_usage', 'utrc_idle_users']:
         df = DATAFRAMES[worksheet]
         filtered_df = filter_df(df, checklist)
-        user_count = filtered_df.shape[0]
+        duplicates_rmvd = filtered_df.drop_duplicates(subset=['Institution', 'Last Name', 'First Name'])
+        user_count = duplicates_rmvd.shape[0]
 
         if worksheet == 'utrc_individual_user_hpc_usage':
             totals['active_users'] = user_count
