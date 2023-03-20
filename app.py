@@ -36,14 +36,21 @@ for page in dash.page_registry.values():
 
 @app.callback(
 	Output('hidden-login', 'data'),
+	Output('login-form', 'children'),
 	Input('login', 'n_clicks'),
 	State('username', 'value'),
 	State('password', 'value')
 )
 def login(n_clicks, username, password):
+	form = [dcc.Input(id='username', type='text', placeholder='username'),
+			dcc.Input(id='password', type='text', placeholder='password'),
+			html.Button('Log in', id='login', n_clicks=0)]
 	if n_clicks is not None:
 		authentication = authenticate(username, password)
-		return authentication
+		if authentication == True:
+			return authentication, ""
+		else:
+		    return authentication, form
 
 if __name__ == '__main__':
 	app.run(host='0.0.0.0', debug=True)

@@ -158,16 +158,20 @@ def clean_df(df):
     # Replace full institution names with abbreviations
     for i in range(len(df)):
         df.loc[i, "Institution"] = INSTITUTIONS[df.loc[i, "Institution"]]
+
+    # Remove duplicates from individual sheets
+    df = df.drop_duplicates(subset=['Login'])
     
     return df
 
-def filter_df(df, checklist):
+def filter_df(df, checklist, date_range):
     filtered_df = df[df['Institution'].isin(checklist)]
+    filtered_df = filtered_df[filtered_df['Date'].isin(get_dates_from_range(date_range))]
     filtered_df = filtered_df.sort_values(['Date', 'Institution'])
 
     return filtered_df
 
-def select_df(DATAFRAMES, dropdown_selection, checklist, authenticated=False):
+def select_df(DATAFRAMES, dropdown_selection, checklist, date_range, authenticated=False):
     df = DATAFRAMES[dropdown_selection]
 
     if authenticated==False:
@@ -178,17 +182,17 @@ def select_df(DATAFRAMES, dropdown_selection, checklist, authenticated=False):
                 logging.debug(e)
                 continue
 
-    df = filter_df(df, checklist)
+    df = filter_df(df, checklist, date_range)
 
     return df
 
-def get_totals(DATAFRAMES, checklist):
+def get_totals(DATAFRAMES, checklist, date_range):
     totals = {}
     for worksheet in ['utrc_individual_user_hpc_usage', 'utrc_idle_users']:
         df = DATAFRAMES[worksheet]
-        filtered_df = filter_df(df, checklist)
-        duplicates_rmvd = filtered_df.drop_duplicates(subset=['Institution', 'Last Name', 'First Name'])
-        user_count = duplicates_rmvd.shape[0]
+        filtered_df = filter_df(df, checklist, date_range)
+        latest = filtered_df.loc[filtered_df['Date'] == filtered_df.iloc[-1]['Date']]
+        user_count = latest.shape[0]
 
         if worksheet == 'utrc_individual_user_hpc_usage':
             totals['active_users'] = user_count
@@ -197,6 +201,29 @@ def get_totals(DATAFRAMES, checklist):
 
     totals['total_users'] = totals['active_users'] + totals['idle_users']
     return totals
+
+def get_marks():
+    marks = {}
+    workbook_paths = get_workbook_paths('./assets/data/monthly_reports')
+    workbook_paths.sort()
+    for index, path in enumerate(workbook_paths):
+        filename = path.split('/')[-1]
+        date = get_date_from_filename(filename)
+        marks[index] = date
+    return marks
+
+def get_dates_from_range(date_range):
+    dates = []
+    workbook_paths = get_workbook_paths('./assets/data/monthly_reports')
+    workbook_paths.sort()
+    for index, path in enumerate(workbook_paths):
+        filename = path.split('/')[-1]
+        date = get_date_from_filename(filename)
+        dates.append(date)
+    
+    logging.debug(dates[date_range[0]:date_range[1]])
+    return dates[date_range[0]:(date_range[1]+1)]
+
 
 def create_conditional_style(df):
     style=[]

@@ -3,7 +3,7 @@ import plotly.express as px
 
 import dash
 from dash import dcc, Output, Input, html, dash_table
-from src.data_cleanup import clean_df, select_df, get_totals, append_date_to_worksheets, get_workbook_paths
+from src.data_cleanup import clean_df, select_df, get_totals, append_date_to_worksheets, get_workbook_paths, get_marks
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
@@ -77,6 +77,7 @@ layout = html.Div([
 
             html.Div([
                 "By date:",
+                dcc.RangeSlider(id='date_filter', value=[0, len(get_marks())], step=None, marks=get_marks(), min=0, max=len(get_marks())-1)
             ], id='date_range_selector'),], id='filters'),
         
         html.Div([
@@ -113,10 +114,12 @@ layout = html.Div([
     Output('total_users', 'children'),
     Input('dropdown', 'value'),
     Input('hidden-login', 'data'),
-    Input('select_institutions_checklist', 'value')
+    Input('select_institutions_checklist', 'value'),
+    Input('date_filter', 'value')
 )
-def update_figs(dropdown, authentication, checklist):
-    df = select_df(DATAFRAMES, dropdown, checklist, authentication)
+def update_figs(dropdown, authentication, checklist, date_range):
+    logging.debug(date_range)
+    df = select_df(DATAFRAMES, dropdown, checklist, date_range, authentication)
     
     table = dash_table.DataTable(id='datatable_id',
                              data=df.to_dict('records'),
@@ -143,7 +146,7 @@ def update_figs(dropdown, authentication, checklist):
                 text_auto=True
             ))
     
-    totals = get_totals(DATAFRAMES, checklist)
+    totals = get_totals(DATAFRAMES, checklist, date_range)
 
 
     return table, bargraph, totals['active_users'], totals['idle_users'], totals['total_users']
