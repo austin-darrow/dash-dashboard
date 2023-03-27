@@ -127,6 +127,20 @@ html, body {
     gap: 1rem;
 }
 
+/* Fiscal Year Selector */
+#year_radio_box {
+    border: 1px solid #222222;
+    padding: 1rem;
+    background-color: #ffffff;
+    color: #222222;
+    font-size: 1rem;
+}
+
+#year_radio_dcc {
+    display: flex;
+    gap: 1rem;
+}
+
 /* Date Range Selector */
 #date_range_selector {
     border: 1px solid #222222;
@@ -171,15 +185,16 @@ th.dash-header.column-0 {
     display: flex;
     align-items: center;
     justify-content: space-evenly;
-    width: 40rem;
+    width: 50%;
     background-color: #222222;
     border: 1px solid #222222;
     border-radius: 8px;
+    margin-left: 25%;
 }
 
 .total_counters {
-    height: 10rem;
-    width: 10rem;
+    height: 8rem;
+    width: auto;
     display: flex;
     flex-direction: column;
     align-items: center;

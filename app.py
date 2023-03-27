@@ -19,6 +19,7 @@ app.layout = html.Div([
         [html.A(html.Img(src='./assets/images/utrc-horizontal-logo-white-simple.svg', className='utrc-logo'), href='https://utrc.tacc.utexas.edu/'),
          html.A("Home", href='/'),
          html.A("Users", href='/users'),
+		 html.A("Usage/Allocations", href='/usage'),
          html.Div([
             dcc.Input(id='username', type='text', placeholder='username'),
             dcc.Input(id='password', type='text', placeholder='password'),

@@ -5,3 +5,7 @@ build:
 
 run:
 	docker run --rm -p 8050:8050 austindarrow/dashboard:1.0
+
+local_run:
+	source ~/Environments/py311_env/bin/activate
+	python app.py

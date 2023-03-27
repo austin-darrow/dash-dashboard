@@ -122,11 +122,24 @@ PROTECTED_COLUMNS = [
     'PI Email'
 ]
 
+def get_fiscal_year_dates(fiscal_year):
+    start = fiscal_year.split('-')[0]
+    start_months = ['09', '10', '11', '12']
+    end = fiscal_year.split('-')[1]
+    end_months = ['01', '02', '03', '04', '05', '06', '07', '08']
+    dates = []
+    for month in start_months:
+        dates.append(f'{start}-{month}')
+    for month in end_months:
+        dates.append(f'{end}-{month}')
+    return dates
+
 def get_workbook_paths(directory):
     f = []
     for (dirpath, _, filenames) in walk(directory):
         for filename in filenames:
-            f.append(dirpath + "/" + filename)
+            if filename.endswith('.xlsx'):
+                f.append(dirpath + "/" + filename)
         break
     return f
 
@@ -148,51 +161,55 @@ def get_date_from_filename(filename, prefix='utrc_report'):
 
 def clean_df(df):
     # Rename worksheet table headers
-    for header in COLUMN_HEADERS:
-        try:
-            df = df.rename({header: COLUMN_HEADERS[header]}, axis='columns')
-        except:
-            logging.debug(Exception)
-            continue
+    df.rename(columns=COLUMN_HEADERS, inplace=True)
 
     # Replace full institution names with abbreviations
     for i in range(len(df)):
         df.loc[i, "Institution"] = INSTITUTIONS[df.loc[i, "Institution"]]
 
     # Remove duplicates from individual sheets
-    df = df.drop_duplicates(subset=['Login'])
-    
-    return df
+    df.drop_duplicates(subset=['Login'], inplace=True)
 
-def filter_df(df, checklist, date_range):
+def filter_df(df, checklist, date_range, fiscal_year):
     filtered_df = df[df['Institution'].isin(checklist)]
-    filtered_df = filtered_df[filtered_df['Date'].isin(get_dates_from_range(date_range))]
-    filtered_df = filtered_df.sort_values(['Date', 'Institution'])
+    filtered_df = filtered_df[filtered_df['Date'].isin(get_dates_from_range(date_range, fiscal_year))]
+    
+    filtered_df.sort_values(['Date', 'Institution'], inplace=True)
 
     return filtered_df
 
-def select_df(DATAFRAMES, dropdown_selection, checklist, date_range, authenticated=False):
+def select_df(DATAFRAMES, dropdown_selection, checklist, date_range, fiscal_year, authenticated=False):
+    """ Given a list of filter inputs, returns a filtered dataframe. Removes
+        sensitive data before returning if a user has not been authenticated. """
     df = DATAFRAMES[dropdown_selection]
 
     if authenticated==False:
         for column in PROTECTED_COLUMNS:
             try:
                 df = df.drop(columns=column)
-            except Exception as e: # Throws error if column name isn't in specific worksheets
-                logging.debug(e)
+            except: # Throws error if column name isn't in specific worksheets
                 continue
 
-    df = filter_df(df, checklist, date_range)
+    df = filter_df(df, checklist, date_range, fiscal_year)
 
     return df
 
-def get_totals(DATAFRAMES, checklist, date_range):
+def get_totals(DATAFRAMES, checklist, date_range, fiscal_year):
+    """ Given a dictionary of dataframes, a checklist of selected universities,
+        and a date range of selected months, returns a dictionary of total, active
+        and idle users in the last selected month. """
     totals = {}
     for worksheet in ['utrc_individual_user_hpc_usage', 'utrc_idle_users']:
         df = DATAFRAMES[worksheet]
-        filtered_df = filter_df(df, checklist, date_range)
-        latest = filtered_df.loc[filtered_df['Date'] == filtered_df.iloc[-1]['Date']]
-        user_count = latest.shape[0]
+        filtered_df = filter_df(df, checklist, date_range, fiscal_year)
+        inst_grps = filtered_df.groupby(['Institution'])
+        avgs = []
+        for group in checklist:
+            try:
+                avgs.append(inst_grps.get_group(group)['Date'].value_counts().mean())
+            except:
+                continue
+        user_count = int(sum(avgs))
 
         if worksheet == 'utrc_individual_user_hpc_usage':
             totals['active_users'] = user_count
@@ -202,35 +219,32 @@ def get_totals(DATAFRAMES, checklist, date_range):
     totals['total_users'] = totals['active_users'] + totals['idle_users']
     return totals
 
-def get_marks():
+def get_marks(fiscal_year):
+    """ Returns a dictionary, where keys are an integer representing a month,
+        and values are a string representation of '%y-%m' (e.g. '21-09') """
     marks = {}
     workbook_paths = get_workbook_paths('./assets/data/monthly_reports')
     workbook_paths.sort()
-    for index, path in enumerate(workbook_paths):
+    count = 0
+    for path in workbook_paths:
         filename = path.split('/')[-1]
         date = get_date_from_filename(filename)
-        marks[index] = date
+        if date in get_fiscal_year_dates(fiscal_year):
+            marks[count] = date
+            count += 1
     return marks
 
-def get_dates_from_range(date_range):
+def get_dates_from_range(date_range, fiscal_year):
+    """ Given a list with a starting and ending integer, returns a list of
+        all dates in the filelist. """
+    fy_dates = get_fiscal_year_dates(fiscal_year)
     dates = []
     workbook_paths = get_workbook_paths('./assets/data/monthly_reports')
     workbook_paths.sort()
-    for index, path in enumerate(workbook_paths):
+    for path in workbook_paths:
         filename = path.split('/')[-1]
         date = get_date_from_filename(filename)
-        dates.append(date)
+        if date in fy_dates:
+            dates.append(date)
     
-    logging.debug(dates[date_range[0]:date_range[1]])
     return dates[date_range[0]:(date_range[1]+1)]
-
-
-def create_conditional_style(df):
-    style=[]
-    for col in df.columns:
-        name_length = len(col)
-        pixel = 50 + round(name_length*5)
-        pixel = str(pixel) + "px"
-        style.append({'if': {'column_id': col}, 'minWidth': pixel})
-
-    return style
