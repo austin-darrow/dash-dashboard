@@ -62,6 +62,20 @@ INSTITUTIONS = {
     'University of Texas Southwestern Medical Center (UTSW) (UT Southwestern)': 'UTSW',
     'University of Texas System': 'UTSYS',
     'University of Texas Tyler': 'UTT',
+    'UTAus': 'UTAus',
+    'UTA': 'UTA',
+    'UTMDA': 'UTMDA',
+    'UTD': 'UTD',
+    'UTSW': 'UTSW',
+    'UTSA': 'UTSA',
+    'UTT': 'UTT',
+    'UTSYS': 'UTSYS',
+    'UTHSC-H': 'UTHSC-H',
+    'UTHSC-SA': 'UTHSC-SA',
+    'UTMB': 'UTMB',
+    'UTPB': 'UTPB',
+    'UTRGV': 'UTRGV',
+    'UTEP': 'UTEP'
 }
 
 COLUMN_HEADERS = {
@@ -119,7 +133,11 @@ PROTECTED_COLUMNS = [
     'account_id',
     'Account ID',
     'project_pi_email',
-    'PI Email'
+    'PI Email',
+    'last_name',
+    'Last Name',
+    'first_name',
+    'First Name'
 ]
 
 def get_fiscal_year_dates(fiscal_year):
@@ -162,13 +180,18 @@ def get_date_from_filename(filename, prefix='utrc_report'):
 def clean_df(df):
     # Rename worksheet table headers
     df.rename(columns=COLUMN_HEADERS, inplace=True)
+    df.dropna(subset='Institution', inplace=True)
+    df.drop(df.columns[df.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
 
     # Replace full institution names with abbreviations
     for i in range(len(df)):
         df.loc[i, "Institution"] = INSTITUTIONS[df.loc[i, "Institution"]]
 
     # Remove duplicates from individual sheets
-    df.drop_duplicates(subset=['Login'], inplace=True)
+    try:
+        df.drop_duplicates(subset=['Login'], inplace=True)
+    except:
+        pass # Some worksheets do not have a login column
 
 def filter_df(df, checklist, date_range, fiscal_year):
     filtered_df = df[df['Institution'].isin(checklist)]
@@ -194,12 +217,12 @@ def select_df(DATAFRAMES, dropdown_selection, checklist, date_range, fiscal_year
 
     return df
 
-def get_totals(DATAFRAMES, checklist, date_range, fiscal_year):
+def get_totals(DATAFRAMES, checklist, date_range, fiscal_year, worksheets):
     """ Given a dictionary of dataframes, a checklist of selected universities,
         and a date range of selected months, returns a dictionary of total, active
         and idle users in the last selected month. """
     totals = {}
-    for worksheet in ['utrc_individual_user_hpc_usage', 'utrc_idle_users']:
+    for worksheet in worksheets:
         df = DATAFRAMES[worksheet]
         filtered_df = filter_df(df, checklist, date_range, fiscal_year)
         inst_grps = filtered_df.groupby(['Institution'])
@@ -216,7 +239,6 @@ def get_totals(DATAFRAMES, checklist, date_range, fiscal_year):
         elif worksheet == 'utrc_idle_users':
             totals['idle_users'] = user_count
 
-    totals['total_users'] = totals['active_users'] + totals['idle_users']
     return totals
 
 def get_marks(fiscal_year):

@@ -5,7 +5,8 @@ from src.authenticator import authenticate
 
 logging.basicConfig(level=logging.DEBUG)
 
-app = dash.Dash(__name__, use_pages=True, suppress_callback_exceptions=True, title='UTRC Dashboard')
+app = dash.Dash(__name__, use_pages=True, prevent_initial_callbacks='initial_duplicate',
+		suppress_callback_exceptions=True, title='UTRC Dashboard')
 
 app.layout = html.Div([
     html.Div(

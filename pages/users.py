@@ -192,8 +192,9 @@ def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
                          text_auto=True
                     ))
     
-    totals = get_totals(DATAFRAMES, checklist, date_range, fiscal_year)
-
+    totals = get_totals(DATAFRAMES, checklist, date_range, fiscal_year, ['utrc_individual_user_hpc_usage', 'utrc_idle_users'])
+    totals['total_users'] = totals['active_users'] + totals['idle_users']
+    
     return table, bargraph, totals['active_users'], totals['idle_users'], totals['total_users'], slider_children
 
 
