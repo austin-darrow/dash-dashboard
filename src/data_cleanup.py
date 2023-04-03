@@ -312,7 +312,7 @@ def calc_monthly_avgs(df, checklist):
 
 def calc_node_hours(df):
     for i in range(len(df)):
-        df.loc[i, "SU's Charged"] = (df.loc[i, "SU's Charged"] * NODE_HOURS_MODIFIER[df.loc[i, "Resource"]])
+        df.loc[i, "SU's Charged"] = (round(df.loc[i, "SU's Charged"] * NODE_HOURS_MODIFIER[df.loc[i, "Resource"]]))
     return df
 
 def calc_node_fy_sums(df, checklist):

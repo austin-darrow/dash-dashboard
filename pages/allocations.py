@@ -75,6 +75,8 @@ layout=html.Div([
 
     html.Div(children=[], id='allocations_table', className='my_tables'),
 
+    dcc.Location(id='url'),
+
 ], className='body')
 
 

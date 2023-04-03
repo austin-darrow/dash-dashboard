@@ -21,8 +21,7 @@ app.layout = html.Div([
     ),
     html.Div(
         [html.A(html.Img(src='./assets/images/utrc-horizontal-logo-white-simple.svg', className='utrc-logo'), href='https://utrc.tacc.utexas.edu/'),
-         html.A("Home", href='/'),
-         html.A("Users", href='/users'),
+         html.A("Users", href='/'),
 		 html.A("Allocations", href='/allocations'),
 		 html.A("Usage", href='/usage'),
          html.Div([
@@ -33,6 +32,7 @@ app.layout = html.Div([
         id='header2'
 	),
 	dcc.Store(id='hidden-login', storage_type='local'),
+	html.Div([
 	html.Div([
             "Select Filters",
             html.Div([
@@ -92,7 +92,7 @@ app.layout = html.Div([
 								persistence=True,
                     			persistence_type='session')
             ], id='date_range_selector'),], id='filters'),
-	dash.page_container
+	dash.page_container], className='body'),
 ])
 
 for page in dash.page_registry.values():
@@ -138,7 +138,7 @@ def update_date_range(date_range, fiscal_year):
                        dcc.RangeSlider(id='date_filter', value=date_range,
                                        step=None, marks=marks, min=0, max=len(marks)-1)]
 	return slider_children
-	
+
 
 if __name__ == '__main__':
-	app.run(host='0.0.0.0', debug=True)
+	app.run(host='0.0.0.0')

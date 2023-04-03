@@ -8,7 +8,7 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
-dash.register_page(__name__)
+dash.register_page(__name__, path='/')
 app = dash.get_app()
 
 # INCORPORATE DATA
@@ -69,7 +69,9 @@ layout = html.Div([
         html.Div(children=[], id='bargraph'),
 
         html.Div(children=[], id='table'),
-    ], className='body')
+    ], className='body'),
+
+    dcc.Location(id='url')
 ])
 
 # ADD INTERACTIVITY THROUGH CALLBACKS

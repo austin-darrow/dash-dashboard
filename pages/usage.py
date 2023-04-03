@@ -73,6 +73,8 @@ layout=html.Div([
 
     html.Div(children=[], id='usage_table', className='my_tables'),
 
+    dcc.Location(id='url'),
+
 ], className='body')
 
 # ADD INTERACTIVITY THROUGH CALLBACKS
