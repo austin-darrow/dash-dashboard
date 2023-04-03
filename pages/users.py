@@ -48,59 +48,6 @@ DATAFRAMES = merge_workbooks()
 layout = html.Div([
     html.Div([
         html.Div([
-            "Select Filters",
-            html.Div([
-                "By institution:",
-                dcc.Checklist(
-                    id='select_institutions_checklist',
-                    options=[
-                        {'label': 'UTA', 'value': 'UTA'},
-                        {'label': 'UTAus', 'value': 'UTAus'},
-                        {'label': 'UTD', 'value': 'UTD'},
-                        {'label': 'UTEP', 'value': 'UTEP'},
-                        {'label': 'UTHSC-H', 'value': 'UTHSC-H'},
-                        {'label': 'UTHSC-SA', 'value': 'UTHSC-SA'},
-                        {'label': 'UTMB', 'value': 'UTMB'},
-                        {'label': 'UTMDA', 'value': 'UTMDA'},
-                        {'label': 'UTPB', 'value': 'UTPB'},
-                        {'label': 'UTRGV', 'value': 'UTRGV'},
-                        {'label': 'UTSA', 'value': 'UTSA'},
-                        {'label': 'UTSW', 'value': 'UTSW'}, 
-                        {'label': 'UTSYS', 'value': 'UTSYS'},
-                        {'label': 'UTT', 'value': 'UTT'}
-                    ],
-                    value=['UTA', 'UTAus', 'UTHSC-SA', 'UTSW', 'UTHSC-H', 'UTMDA', 'UTRGV', 'UTMB', 'UTD', 'UTSA', 'UTEP', 'UTT', 'UTSYS', 'UTPB'],
-                    persistence=True,
-                    persistence_type='session'
-                ),
-            ], id='select_institutions_div'),
-
-            html.Div([
-                "By fiscal year:",
-                dcc.RadioItems(id='year_radio_dcc', options=FY_OPTIONS, value='21-22', inline=True)], id='year_radio_box'),
-
-            html.Div([
-                "By month:",
-                dcc.RangeSlider(id='date_filter', 
-                                value=[0, 12],
-                                step=None, 
-                                marks={0: '21-09',
-                                       1: '21-10',
-                                       2: '21-11',
-                                       3: '21-12',
-                                       4: '22-01',
-                                       5: '22-02',
-                                       6: '22-03',
-                                       7: '22-04',
-                                       8: '22-05',
-                                       9: '22-06',
-                                       10: '22-07',
-                                       11: '22-08'}, 
-                                min=0, 
-                                max=11)
-            ], id='date_range_selector'),], id='filters'),
-        
-        html.Div([
             html.Div([html.Div(["Avg Total Users"], className='counter_title'), html.Div([0], id='total_users')], className="total_counters"),
             html.Div([html.Div(["Avg Active"], className='counter_title'), html.Div([0], id='active_users')], className="total_counters"),
             html.Div([html.Div(["Avg Idle"], className='counter_title'), html.Div([0], id="idle_users")], className="total_counters"),
@@ -132,7 +79,6 @@ layout = html.Div([
     Output('active_users', 'children'),
     Output('idle_users', 'children'),
     Output('total_users', 'children'),
-    Output('date_range_selector', 'children'),
     Input('dropdown', 'value'),
     Input('hidden-login', 'data'),
     Input('select_institutions_checklist', 'value'),
@@ -140,21 +86,11 @@ layout = html.Div([
     Input('year_radio_dcc', 'value')
 )
 def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
-    logging.debug(f'Callback trigger id: {ctx.triggered_id}')
     marks = get_marks(fiscal_year)
     if ctx.triggered_id == 'year_radio_dcc':
-        logging.debug(f'Marks = {marks}')
         df = select_df(DATAFRAMES, dropdown, checklist, [0, len(marks)], fiscal_year, authentication)
-        slider_children = ["By month:",
-                       dcc.RangeSlider(id='date_filter', value=[0, len(marks)],
-                                       step=None, marks=marks, min=0, max=len(marks)-1)]
     else:
-        logging.debug(f'Marks = {marks}')
-        logging.debug(f'date_range = {date_range}')
         df = select_df(DATAFRAMES, dropdown, checklist, date_range, fiscal_year, authentication)
-        slider_children = ["By month:",
-                       dcc.RangeSlider(id='date_filter', value=date_range,
-                                       step=None, marks=marks, min=0, max=len(marks)-1)]
 
     table = dash_table.DataTable(id='datatable_id',
                                  data=df.to_dict('records'),
@@ -196,24 +132,4 @@ def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
     totals = get_totals(DATAFRAMES, checklist, date_range, fiscal_year, ['utrc_individual_user_hpc_usage', 'utrc_idle_users'])
     totals['total_users'] = totals['active_users'] + totals['idle_users']
     
-    return table, bargraph, totals['active_users'], totals['idle_users'], totals['total_users'], slider_children
-
-
-
-
-
-
-
-########## Utility methods ##########
-def create_conditional_style(df):
-    """
-    Necessary workaround for a Plotly Dash bug where table headers are cut off if row data is shorter than the header.
-    """
-    style=[]
-    for col in df.columns:
-        name_length = len(col)
-        pixel = 30 + round(name_length*8)
-        pixel = str(pixel) + "px"
-        style.append({'if': {'column_id': col}, 'minWidth': pixel})
-
-    return style
+    return table, bargraph, totals['active_users'], totals['idle_users'], totals['total_users']

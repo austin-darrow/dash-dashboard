@@ -12,7 +12,9 @@ dash.register_page(__name__)
 app = dash.get_app()
 
 # INCORPORATE DATA
-WORKSHEETS = ['utrc_active_allocations', 'utrc_corral_usage']
+WORKSHEETS = ['utrc_active_allocations', 'utrc_individual_user_hpc_usage', 'utrc_corral_usage', 'utrc_current_allocations', 'utrc_new_allocation_requests']
+FY_OPTIONS = create_fy_options()
+logging.debug(f'FY Options: {FY_OPTIONS}')
 
 def initialize_df(workbook_path):
     """
@@ -54,15 +56,13 @@ layout=html.Div([
         ], id='total_counters_wrapper'),
     # END TOTALS
 
-    html.Div(children=[], id='node_graph'),
-
-    html.Div(children=[], id='corral_graph'),
-
     # DROPDOWN
     html.Div([
         dcc.Dropdown(id='dropdown',
                         options=[
                         {'label': 'Active Allocations', 'value': 'utrc_active_allocations'},
+                        {'label': 'Current Allocations', 'value': 'utrc_current_allocations'},
+                        {'label': 'New Allocations', 'value': 'utrc_new_allocation_requests'},
                         {'label': 'Corral Usage', 'value': 'utrc_corral_usage'}
                     ],
                         value='utrc_active_allocations',
@@ -71,15 +71,17 @@ layout=html.Div([
         ],),
     # END DROPDOWN
 
-    html.Div(children=[], id='usage_table', className='my_tables'),
+    html.Div(children=[], id='allocations_bargraph', className='my_graphs'),
+
+    html.Div(children=[], id='allocations_table', className='my_tables'),
 
 ], className='body')
 
+
 # ADD INTERACTIVITY THROUGH CALLBACKS
 @app.callback(
-    Output('usage_table', 'children'),
-    Output('node_graph', 'children'),
-    Output('corral_graph', 'children'),
+    Output('allocations_table', 'children'),
+    Output('allocations_bargraph', 'children'),
     Input('dropdown', 'value'),
     Input('hidden-login', 'data'),
     Input('select_institutions_checklist', 'value'),
@@ -109,30 +111,18 @@ def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
                                  sort_action='native',
                                  filter_action='native'
                             )
-    
-    sus_df = select_df(DATAFRAMES, 'utrc_active_allocations', checklist, date_range, fiscal_year, authentication)
-    sus_df_calculated = calc_node_monthly_sums(sus_df, checklist, "SU's Charged")
-    node_graph = dcc.Graph(figure=px.bar(
-                           data_frame=sus_df_calculated,
-                           x='Institution',
-                           y="SU's Charged",
-                           color='Date',
-                           barmode='group',
-                           text_auto=True
-                        ))
-    
-    corral_df = select_df(DATAFRAMES, 'utrc_corral_usage', checklist, date_range, fiscal_year, authentication)
-    corral_df_calculated = calc_node_monthly_sums(corral_df, checklist, "Storage Granted (TB)")
-    corral_graph = dcc.Graph(figure=px.bar(
-                           data_frame=corral_df_calculated,
-                           x='Institution',
-                           y="Storage Granted (TB)",
-                           color='Date',
-                           barmode='group',
-                           text_auto=True
-                        ))
+
+    df_with_avgs = calc_monthly_avgs(df, checklist)
+    bargraph = dcc.Graph(figure=px.histogram(
+                         data_frame=df_with_avgs,
+                         x="Institution",
+                         color='Date',
+                         barmode='group',
+                         text_auto=True
+                    ))
+
     
     #totals = get_totals(DATAFRAMES, checklist, date_range, fiscal_year, ['utrc_individual_user_hpc_usage', 'utrc_idle_users'])
     #totals['total_users'] = totals['active_users'] + totals['idle_users']
     
-    return table, node_graph, corral_graph
+    return table, bargraph

@@ -315,7 +315,7 @@ def calc_node_hours(df):
         df.loc[i, "SU's Charged"] = (df.loc[i, "SU's Charged"] * NODE_HOURS_MODIFIER[df.loc[i, "Resource"]])
     return df
 
-def calc_node_sums(df, checklist):
+def calc_node_fy_sums(df, checklist):
     inst_grps = df.groupby(['Institution'])
     df_with_avgs = {'Institution': [], 'Date': [], "SU's Charged": []}
     for group in checklist:
@@ -328,6 +328,27 @@ def calc_node_sums(df, checklist):
             continue # For some date ranges, even if an institution is checked, it doesn't appear in the data, throwing an error
     combined_df = pd.concat([df, pd.DataFrame(df_with_avgs)])
     return combined_df
+
+def calc_node_monthly_sums(df, checklist, column):
+    inst_grps = df.groupby(['Institution'])
+    df_with_avgs = {'Institution': [], 'Date': [], column: []}
+    for group in checklist:
+        try:
+            date_grp = inst_grps.get_group(group).groupby(['Date'])
+            for date in date_grp.groups.keys():
+                if column == 'Storage Granted (TB)':
+                    monthly_sum = date_grp.get_group(date)['Storage Granted (Gb)'].sum()
+                    monthly_sum = int(round(monthly_sum/1024.0))
+                else:
+                    monthly_sum = date_grp.get_group(date)[column].sum()
+                df_with_avgs['Institution'].append(group)
+                df_with_avgs[column].append(round(monthly_sum))
+                df_with_avgs['Date'].append(date)
+        except:
+            continue
+    df_with_avgs = pd.DataFrame(df_with_avgs)
+    df_with_avgs.sort_values(['Date', 'Institution'], inplace=True)
+    return df_with_avgs
 
 def create_fy_options():
     paths = get_workbook_paths('./assets/data/monthly_reports')
@@ -351,3 +372,16 @@ def create_fy_options():
     fy_options.sort()
 
     return fy_options
+
+def create_conditional_style(df):
+    """
+    Necessary workaround for a Plotly Dash bug where table headers are cut off if row data is shorter than the header.
+    """
+    style=[]
+    for col in df.columns:
+        name_length = len(col)
+        pixel = 30 + round(name_length*8)
+        pixel = str(pixel) + "px"
+        style.append({'if': {'column_id': col}, 'minWidth': pixel})
+
+    return style
