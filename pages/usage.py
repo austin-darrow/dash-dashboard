@@ -13,23 +13,26 @@ app = dash.get_app()
 
 # INCORPORATE DATA
 WORKSHEETS = ['utrc_active_allocations', 'utrc_individual_user_hpc_usage', 'utrc_corral_usage', 'utrc_current_allocations', 'utrc_new_allocation_requests']
+FY_OPTIONS = create_fy_options()
+logging.debug(f'FY Options: {FY_OPTIONS}')
 
 def initialize_df(workbook_path):
     """
     To keep the dashboard running quickly, data should be read in only once.
     """
     dataframes = pd.read_excel(workbook_path, WORKSHEETS)
-    logging.debug(WORKSHEETS)
     for worksheet in dataframes:
-        logging.debug(worksheet)
         clean_df(dataframes[worksheet])
+        if worksheet in WORKSHEETS_RM_DUPLICATES:
+            remove_duplicates(dataframes[worksheet])
+        if worksheet == 'utrc_active_allocations':
+            dataframes[worksheet] = calc_node_hours(dataframes[worksheet])
 
     return dataframes
 
 def merge_workbooks():
     workbook_paths = get_workbook_paths('./assets/data/monthly_reports')
     for index, path in enumerate(workbook_paths):
-        logging.debug(path)
         workbook = initialize_df(path)
         filename = path.split('/')[-1]
         workbook = append_date_to_worksheets(workbook, filename)
@@ -77,9 +80,7 @@ layout=html.Div([
 
             html.Div([
                 "By fiscal year:",
-                dcc.RadioItems(id='year_radio_dcc', options=[
-                '20-21', '21-22', '22-23'
-            ], value='21-22', inline=True)], id='year_radio_box'),
+                dcc.RadioItems(id='year_radio_dcc', options=FY_OPTIONS, value='21-22', inline=True)], id='year_radio_box'),
 
             html.Div([
                 "By month:",
@@ -130,6 +131,8 @@ layout=html.Div([
 
     html.Div(children=[], id='usage_table', className='my_tables'),
 
+    html.Div(children=[], id='node_graph')
+
 ], className='body')
 
 
@@ -138,6 +141,7 @@ layout=html.Div([
     Output('usage_table', 'children'),
     Output('usage_bargraph', 'children'),
     Output('date_range_selector', 'children', allow_duplicate=True),
+    Output('node_graph', 'children'),
     Input('dropdown', 'value'),
     Input('hidden-login', 'data'),
     Input('select_institutions_checklist', 'value'),
@@ -145,16 +149,16 @@ layout=html.Div([
     Input('year_radio_dcc', 'value')
 )
 def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
-    logging.debug(ctx.triggered_id)
+    logging.debug(f'Callback trigger id: {ctx.triggered_id}')
     marks = get_marks(fiscal_year)
     if ctx.triggered_id == 'year_radio_dcc':
-        logging.debug(f'marks = {marks}')
+        logging.debug(f'Marks = {marks}')
         df = select_df(DATAFRAMES, dropdown, checklist, [0, len(marks)], fiscal_year, authentication)
         slider_children = ["By month:",
                        dcc.RangeSlider(id='date_filter', value=[0, len(marks)],
                                        step=None, marks=marks, min=0, max=len(marks)-1)]
     else:
-        logging.debug(f'marks = {marks}')
+        logging.debug(f'Marks = {marks}')
         logging.debug(f'date_range = {date_range}')
         df = select_df(DATAFRAMES, dropdown, checklist, date_range, fiscal_year, authentication)
         slider_children = ["By month:",
@@ -176,32 +180,29 @@ def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
                                  sort_action='native',
                                  filter_action='native'
                             )
-    
-    inst_grps = df.groupby(['Institution'])
-    df_with_avgs = {'Institution': [], 'Date': []}
-    for group in checklist:
-        try:
-            monthly_avg = inst_grps.get_group(group)['Date'].value_counts().mean()
-            for i in range(int(monthly_avg)):
-                df_with_avgs['Institution'].append(group)
-                df_with_avgs['Date'].append('AVG')
-        except:
-            continue # For some date ranges, even if an institution is checked, it doesn't appear in the data, throwing an error
-    combined_df = pd.concat([df, pd.DataFrame(df_with_avgs)])
 
-
+    df_with_avgs = calc_monthly_avgs(df, checklist)
     bargraph = dcc.Graph(figure=px.histogram(
-                         data_frame=combined_df,
+                         data_frame=df_with_avgs,
                          x="Institution",
                          color='Date',
                          barmode='group',
                          text_auto=True
                     ))
     
+    df_with_node_sums = calc_node_sums(df, checklist)
+    node_graph = dcc.Graph(figure=px.bar(
+                           data_frame=df,
+                           x='Institution',
+                           y="SU's Charged",
+                           color='Date',
+                           barmode='group'
+                        ))
+    
     #totals = get_totals(DATAFRAMES, checklist, date_range, fiscal_year, ['utrc_individual_user_hpc_usage', 'utrc_idle_users'])
     #totals['total_users'] = totals['active_users'] + totals['idle_users']
     
-    return table, bargraph, slider_children
+    return table, bargraph, slider_children, node_graph
 
 
 

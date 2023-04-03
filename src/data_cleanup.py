@@ -140,6 +140,30 @@ PROTECTED_COLUMNS = [
     'First Name'
 ]
 
+NODE_HOURS_MODIFIER = {
+    'Longhorn2': 0,
+    'Stampede3': 0,
+    'Maverick2': 0,
+    'Jetstream': 0.04,
+    'Chameleon': 0.04,
+    'Lonestar4': 0,
+    'Lonestar5': 1,  # everything relative to LS5
+    'Wrangler3': 0,
+    'Stampede4': 2,
+    'Hikari': 0.04,
+    'Maverick3': 1,
+    'Frontera': 3,
+    'Longhorn3': 3,
+    'lonestar6': 4.5,
+    'Lonestar6': 4.5
+}
+
+WORKSHEETS_RM_DUPLICATES = [
+    'utrc_individual_user_hpc_usage',
+    'utrc_new_users',
+    'utrc_idle_users'
+]
+
 def get_fiscal_year_dates(fiscal_year):
     start = fiscal_year.split('-')[0]
     start_months = ['09', '10', '11', '12']
@@ -187,6 +211,7 @@ def clean_df(df):
     for i in range(len(df)):
         df.loc[i, "Institution"] = INSTITUTIONS[df.loc[i, "Institution"]]
 
+def remove_duplicates(df):
     # Remove duplicates from individual sheets
     try:
         df.drop_duplicates(subset=['Login'], inplace=True)
@@ -270,3 +295,59 @@ def get_dates_from_range(date_range, fiscal_year):
             dates.append(date)
     
     return dates[date_range[0]:(date_range[1]+1)]
+
+def calc_monthly_avgs(df, checklist):
+    inst_grps = df.groupby(['Institution'])
+    df_with_avgs = {'Institution': [], 'Date': []}
+    for group in checklist:
+        try:
+            monthly_avg = inst_grps.get_group(group)['Date'].value_counts().mean()
+            for i in range(int(monthly_avg)):
+                df_with_avgs['Institution'].append(group)
+                df_with_avgs['Date'].append('AVG')
+        except:
+            continue # For some date ranges, even if an institution is checked, it doesn't appear in the data, throwing an error
+    combined_df = pd.concat([df, pd.DataFrame(df_with_avgs)])
+    return combined_df
+
+def calc_node_hours(df):
+    for i in range(len(df)):
+        df.loc[i, "SU's Charged"] = (df.loc[i, "SU's Charged"] * NODE_HOURS_MODIFIER[df.loc[i, "Resource"]])
+    return df
+
+def calc_node_sums(df, checklist):
+    inst_grps = df.groupby(['Institution'])
+    df_with_avgs = {'Institution': [], 'Date': [], "SU's Charged": []}
+    for group in checklist:
+        try:
+            sum = inst_grps.get_group(group)["SU's Charged"].sum()
+            df_with_avgs['Institution'].append(group)
+            df_with_avgs["SU's Charged"].append(round(sum))
+            df_with_avgs['Date'].append('FYTD SUM')
+        except:
+            continue # For some date ranges, even if an institution is checked, it doesn't appear in the data, throwing an error
+    combined_df = pd.concat([df, pd.DataFrame(df_with_avgs)])
+    return combined_df
+
+def create_fy_options():
+    paths = get_workbook_paths('./assets/data/monthly_reports')
+    dates = []
+    for path in paths:
+        filename = path.split('/')[-1]
+        dates.append(get_date_from_filename(filename))
+
+    fy_options = []
+    start_months = ['09', '10', '11', '12']
+    end_months = ['01', '02', '03', '04', '05', '06', '07', '08']
+    for date in dates:
+        year = date.split('-')[0]
+        month = date.split('-')[1]
+        if month in start_months:
+            option = f'{year}-{int(year)+1}'
+        elif month in end_months:
+            option = f'{int(year)-1}-{year}'
+        if option not in fy_options:
+            fy_options.append(option)
+    fy_options.sort()
+
+    return fy_options

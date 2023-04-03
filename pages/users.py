@@ -12,6 +12,7 @@ dash.register_page(__name__)
 app = dash.get_app()
 
 # INCORPORATE DATA
+FY_OPTIONS = create_fy_options()
 
 def initialize_df(workbook_path):
     """
@@ -20,6 +21,8 @@ def initialize_df(workbook_path):
     dataframes = pd.read_excel(workbook_path, ['utrc_individual_user_hpc_usage', 'utrc_new_users', 'utrc_idle_users', 'utrc_suspended_users'])
     for worksheet in dataframes:
         clean_df(dataframes[worksheet])
+        if worksheet in WORKSHEETS_RM_DUPLICATES:
+            remove_duplicates(dataframes[worksheet])
 
     return dataframes
 
@@ -74,9 +77,7 @@ layout = html.Div([
 
             html.Div([
                 "By fiscal year:",
-                dcc.RadioItems(id='year_radio_dcc', options=[
-                '20-21', '21-22', '22-23'
-            ], value='21-22', inline=True)], id='year_radio_box'),
+                dcc.RadioItems(id='year_radio_dcc', options=FY_OPTIONS, value='21-22', inline=True)], id='year_radio_box'),
 
             html.Div([
                 "By month:",
@@ -139,16 +140,16 @@ layout = html.Div([
     Input('year_radio_dcc', 'value')
 )
 def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
-    logging.debug(ctx.triggered_id)
+    logging.debug(f'Callback trigger id: {ctx.triggered_id}')
     marks = get_marks(fiscal_year)
     if ctx.triggered_id == 'year_radio_dcc':
-        logging.debug(f'marks = {marks}')
+        logging.debug(f'Marks = {marks}')
         df = select_df(DATAFRAMES, dropdown, checklist, [0, len(marks)], fiscal_year, authentication)
         slider_children = ["By month:",
                        dcc.RangeSlider(id='date_filter', value=[0, len(marks)],
                                        step=None, marks=marks, min=0, max=len(marks)-1)]
     else:
-        logging.debug(f'marks = {marks}')
+        logging.debug(f'Marks = {marks}')
         logging.debug(f'date_range = {date_range}')
         df = select_df(DATAFRAMES, dropdown, checklist, date_range, fiscal_year, authentication)
         slider_children = ["By month:",
