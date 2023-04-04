@@ -257,12 +257,18 @@ def get_totals(DATAFRAMES, checklist, date_range, fiscal_year, worksheets):
                 avgs.append(inst_grps.get_group(group)['Date'].value_counts().mean())
             except:
                 continue
-        user_count = int(sum(avgs))
+        count = int(sum(avgs))
 
         if worksheet == 'utrc_individual_user_hpc_usage':
-            totals['active_users'] = user_count
+            totals['active_users'] = count
         elif worksheet == 'utrc_idle_users':
-            totals['idle_users'] = user_count
+            totals['idle_users'] = count
+        elif worksheet == 'utrc_active_allocations':
+            totals['active_allocations'] = count
+        elif worksheet == 'utrc_current_allocations':
+            for i in range(len(filtered_df)):
+                idle = filtered_df.loc[i, "Idle Allocation?" == 'X']
+
 
     return totals
 
@@ -385,3 +391,21 @@ def create_conditional_style(df):
         style.append({'if': {'column_id': col}, 'minWidth': pixel})
 
     return style
+
+# def calc_allocation_totals(df, checklist, date_range, fiscal_year):
+#     totals = {}
+#     inst_grps = df.groupby(['Institution'])
+#     avgs = []
+#     for group in checklist:
+#         try:
+#             avgs.append(inst_grps.get_group(group)['Date'].value_counts().mean())
+#         except:
+#             continue
+#     user_count = int(sum(avgs))
+
+#     if worksheet == 'utrc_individual_user_hpc_usage':
+#         totals['active_users'] = user_count
+#     elif worksheet == 'utrc_idle_users':
+#         totals['idle_users'] = user_count
+
+#     return totals

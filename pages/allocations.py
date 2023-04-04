@@ -50,9 +50,9 @@ DATAFRAMES = merge_workbooks()
 layout=html.Div([
     # TOTALS
     html.Div([
-            html.Div([html.Div(["Avg Total Allocations"], className='counter_title'), html.Div([0], id='total_users')], className="total_counters"),
-            html.Div([html.Div(["Avg Active"], className='counter_title'), html.Div([0], id='active_users')], className="total_counters"),
-            html.Div([html.Div(["Avg Idle"], className='counter_title'), html.Div([0], id="idle_users")], className="total_counters"),
+            html.Div([html.Div(["Avg Total Allocations"], className='counter_title'), html.Div([0], id='total_allocations')], className="total_counters"),
+            html.Div([html.Div(["Avg Active"], className='counter_title'), html.Div([0], id='active_allocations')], className="total_counters"),
+            html.Div([html.Div(["Avg Idle"], className='counter_title'), html.Div([0], id="idle_allocations")], className="total_counters"),
         ], id='total_counters_wrapper'),
     # END TOTALS
 
@@ -124,7 +124,7 @@ def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
                     ))
 
     
-    #totals = get_totals(DATAFRAMES, checklist, date_range, fiscal_year, ['utrc_individual_user_hpc_usage', 'utrc_idle_users'])
-    #totals['total_users'] = totals['active_users'] + totals['idle_users']
+    totals = get_totals(DATAFRAMES, checklist, date_range, fiscal_year, ['utrc_active_allocations'])
+    totals['total_users'] = totals['active_users'] + totals['idle_users']
     
     return table, bargraph
