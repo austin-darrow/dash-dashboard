@@ -84,6 +84,9 @@ layout=html.Div([
 @app.callback(
     Output('allocations_table', 'children'),
     Output('allocations_bargraph', 'children'),
+    Output('total_allocations', 'children'),
+    Output('active_allocations', 'children'),
+    Output('idle_allocations', 'children'),
     Input('dropdown', 'value'),
     Input('hidden-login', 'data'),
     Input('select_institutions_checklist', 'value'),
@@ -124,7 +127,7 @@ def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
                     ))
 
     
-    totals = get_totals(DATAFRAMES, checklist, date_range, fiscal_year, ['utrc_active_allocations'])
-    totals['total_users'] = totals['active_users'] + totals['idle_users']
-    
-    return table, bargraph
+    totals = get_allocation_totals(DATAFRAMES, checklist, date_range, fiscal_year, ['utrc_active_allocations', 'utrc_current_allocations'])
+    totals['total_allocations'] = totals['idle_allocations'] + totals['active_allocations']
+
+    return table, bargraph, totals['total_allocations'], totals['active_allocations'], totals['idle_allocations']

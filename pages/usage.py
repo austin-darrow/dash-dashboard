@@ -48,9 +48,8 @@ DATAFRAMES = merge_workbooks()
 layout=html.Div([
     # TOTALS
     html.Div([
-            html.Div([html.Div(["Avg Total Allocations"], className='counter_title'), html.Div([0], id='total_users')], className="total_counters"),
-            html.Div([html.Div(["Avg Active"], className='counter_title'), html.Div([0], id='active_users')], className="total_counters"),
-            html.Div([html.Div(["Avg Idle"], className='counter_title'), html.Div([0], id="idle_users")], className="total_counters"),
+            html.Div([html.Div(["Sum SUs Used (All Machines)"], className='counter_title'), html.Div([0], id='total_sus')], className="total_counters"),
+            html.Div([html.Div(["Sum Corral Storage Allocated (TB)"], className='counter_title'), html.Div([0], id='total_storage')], className="total_counters"),
         ], id='total_counters_wrapper'),
     # END TOTALS
 
@@ -82,6 +81,8 @@ layout=html.Div([
     Output('usage_table', 'children'),
     Output('node_graph', 'children'),
     Output('corral_graph', 'children'),
+    Output('total_sus', 'children'),
+    Output('total_storage', 'children'),
     Input('dropdown', 'value'),
     Input('hidden-login', 'data'),
     Input('select_institutions_checklist', 'value'),
@@ -114,6 +115,7 @@ def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
     
     sus_df = select_df(DATAFRAMES, 'utrc_active_allocations', checklist, date_range, fiscal_year, authentication)
     sus_df_calculated = calc_node_monthly_sums(sus_df, checklist, "SU's Charged")
+    total_sus = int(sus_df["SU's Charged"].sum())
     node_graph = dcc.Graph(figure=px.bar(
                            data_frame=sus_df_calculated,
                            x='Institution',
@@ -125,6 +127,7 @@ def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
     
     corral_df = select_df(DATAFRAMES, 'utrc_corral_usage', checklist, date_range, fiscal_year, authentication)
     corral_df_calculated = calc_node_monthly_sums(corral_df, checklist, "Storage Granted (TB)")
+    total_storage = (int(round(corral_df["Storage Granted (Gb)"].sum() / 1024.0)))
     corral_graph = dcc.Graph(figure=px.bar(
                            data_frame=corral_df_calculated,
                            x='Institution',
@@ -134,7 +137,4 @@ def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
                            text_auto=True
                         ))
     
-    #totals = get_totals(DATAFRAMES, checklist, date_range, fiscal_year, ['utrc_individual_user_hpc_usage', 'utrc_idle_users'])
-    #totals['total_users'] = totals['active_users'] + totals['idle_users']
-    
-    return table, node_graph, corral_graph
+    return table, node_graph, corral_graph, "{:,}".format(total_sus), "{:,}".format(total_storage)

@@ -266,8 +266,10 @@ def get_totals(DATAFRAMES, checklist, date_range, fiscal_year, worksheets):
         elif worksheet == 'utrc_active_allocations':
             totals['active_allocations'] = count
         elif worksheet == 'utrc_current_allocations':
-            for i in range(len(filtered_df)):
-                idle = filtered_df.loc[i, "Idle Allocation?" == 'X']
+            idle_df = filtered_df.loc[df['Idle Allocation?'] == 'X']
+            totals['idle_allocations'] = idle_df.shape[0]
+            totals['total_allocations'] = totals['idle_allocations'] + totals['active_allocations']
+            logging.debug('totals' + str(totals))
 
 
     return totals
@@ -392,20 +394,27 @@ def create_conditional_style(df):
 
     return style
 
-# def calc_allocation_totals(df, checklist, date_range, fiscal_year):
-#     totals = {}
-#     inst_grps = df.groupby(['Institution'])
-#     avgs = []
-#     for group in checklist:
-#         try:
-#             avgs.append(inst_grps.get_group(group)['Date'].value_counts().mean())
-#         except:
-#             continue
-#     user_count = int(sum(avgs))
+def get_allocation_totals(DATAFRAMES, checklist, date_range, fiscal_year, worksheets):
+    totals = {}
+    for worksheet in worksheets:
+        df = DATAFRAMES[worksheet]
+        totals_df = filter_df(df, checklist, date_range, fiscal_year)
+        logging.debug(worksheet)
+        logging.debug(totals_df.head())
+        if worksheet == 'utrc_current_allocations':
+            totals_df = totals_df.loc[totals_df['Idle Allocation?'] == 'X']
+        inst_grps = totals_df.groupby(['Institution'])
+        avgs = []
+        for group in checklist:
+            try:
+                avgs.append(inst_grps.get_group(group)['Date'].value_counts().mean())
+            except:
+                continue
+        count = int(sum(avgs))
 
-#     if worksheet == 'utrc_individual_user_hpc_usage':
-#         totals['active_users'] = user_count
-#     elif worksheet == 'utrc_idle_users':
-#         totals['idle_users'] = user_count
-
-#     return totals
+        if worksheet == 'utrc_active_allocations':
+            totals['active_allocations'] = count
+        elif worksheet == 'utrc_current_allocations':
+            totals['idle_allocations'] = count
+    logging.debug('totals' + str(totals))
+    return totals

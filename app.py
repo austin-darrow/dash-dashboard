@@ -12,15 +12,16 @@ app = dash.Dash(__name__, use_pages=True, prevent_initial_callbacks='initial_dup
 		suppress_callback_exceptions=True, title='UTRC Dashboard')
 
 app.layout = html.Div([
+    # html.Div(
+    #     [html.A(html.Img(src='./assets/images/tacc-white.png', className='header-img'), href='https://www.tacc.utexas.edu/'),
+    #      html.Span(className='branding-seperator'),
+    #      html.A(html.Img(src='./assets/images/utaustin-white.png', className='header-img'), href='https://www.utexas.edu/')
+    #     ],
+    #     id='header'
+    # ),
     html.Div(
-        [html.A(html.Img(src='./assets/images/tacc-white.png', className='header-img'), href='https://www.tacc.utexas.edu/'),
-         html.Span(className='branding-seperator'),
-         html.A(html.Img(src='./assets/images/utaustin-white.png', className='header-img'), href='https://www.utexas.edu/')
-        ],
-        id='header'
-    ),
-    html.Div(
-        [html.A(html.Img(src='./assets/images/utrc-horizontal-logo-white-simple.svg', className='utrc-logo'), href='https://utrc.tacc.utexas.edu/'),
+        [
+	    #  html.A(html.Img(src='./assets/images/utrc-horizontal-logo-white-simple.svg', className='utrc-logo'), href='https://utrc.tacc.utexas.edu/'),
          html.A("Users", href='/'),
 		 html.A("Allocations", href='/allocations'),
 		 html.A("Usage", href='/usage'),
