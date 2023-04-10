@@ -8,8 +8,6 @@ RUN pip install -r requirements.txt
 
 WORKDIR /app
 
-COPY . .
-
 EXPOSE 8050
 
 CMD ["python", "app.py"]

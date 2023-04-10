@@ -1,6 +1,0 @@
-1. Authentication system--stay logged in when switching pages
-2. Authentication system UI--when logged in, change login form to a logout button
-4. API call that automatically grabs new data every X days
-6. Design and implement Usage/Allocation page
-8. Write any additional documentation needed
-9. Quality assurance--add additional tests, exception handling, logging
