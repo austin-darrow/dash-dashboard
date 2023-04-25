@@ -3,10 +3,10 @@ import plotly.express as px
 
 import dash
 from dash import dcc, Output, Input, html, dash_table, ctx
-from src.data_cleanup import *
+from scripts import *
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 dash.register_page(__name__)
 app = dash.get_app()

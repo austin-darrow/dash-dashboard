@@ -2,10 +2,10 @@ import dash
 import dash_auth
 from dash import html, dcc, Input, Output, ctx, State
 import logging
-from src.data_cleanup import create_fy_options, get_marks
+from scripts import create_fy_options, get_marks
 import json
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 FY_OPTIONS = create_fy_options()
 
@@ -212,4 +212,4 @@ def update_date_range(date_range, fiscal_year):
 	return slider_children
 
 if __name__ == '__main__':
-	app.run(host='0.0.0.0', debug=True)
+	app.run(host='0.0.0.0')

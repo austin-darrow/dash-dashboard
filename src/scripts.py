@@ -5,7 +5,7 @@ import re
 from datetime import datetime
 from fuzzywuzzy import fuzz
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 INSTITUTIONS = {
     'The University of Texas': 'UTAus',
