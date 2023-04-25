@@ -1,4 +1,4 @@
-This application pulls user and system allocation/usage data from the Texas Advanced Computing Center ([TACC](https://tacc.utexas.edu)) Allocation System ([TAS](https://tacc.utexas.edu/use-tacc/allocations/)) database. Data is retrieved in monthly .xlsl files. Then, using the [Pandas](https://pandas.pydata.org/docs/) and [Plotly Dash](https://dash.plotly.com/) external Python libraries, an Nginx web server, and a TACC-partitioned VM, it creates a visual, interactive data dashboard with filters, charts, and graphs.
+This application pulls user and system allocation/usage data from the Texas Advanced Computing Center ([TACC](https://tacc.utexas.edu)) Allocation System ([TAS](https://tacc.utexas.edu/use-tacc/allocations/)) database. Data is retrieved in monthly .xlsl files. Then, using the [Pandas](https://pandas.pydata.org/docs/) and [Plotly Dash](https://dash.plotly.com/) external Python libraries, an [Nginx](https://www.nginx.com/) web server, and a TACC-partitioned VM, it creates a visual, interactive data dashboard with filters, charts, and graphs.
 
 The web app is currently hosted [here](http://129.114.38.28). Login is required.
 
@@ -22,16 +22,14 @@ docker build -t austindarrow/dashboard:1.0 .
 docker push austindarrow/dashboard:1.0
 ```
 5. On the VM, setup the Nginx web server configuration file to reverse proxy at port 8050.
-/etc/nginx/sites-available/dashboard.conf
 ```
+# /etc/nginx/sites-available/dashboard.conf
 server {
         listen 80;
         listen [::]:80;
 
         # Change to domain name
         server_name 129.114.38.28;
-
-
 
         location / {
                 proxy_pass http://localhost:8050;
@@ -44,7 +42,5 @@ docker pull austindarrow/dashboard:1.0
 ```
 7. Start the docker image, send it to the background, and exit the VM.
 ```
-docker run --rm -p 8050:8050 austindarrow/dashboard:1.0
-bg
-exit
+docker run --rm -p 8050:8050 austindarrow/dashboard:1.0 && bg && exit
 ```
