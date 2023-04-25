@@ -13,35 +13,9 @@ app = dash.get_app()
 
 # INCORPORATE DATA
 FY_OPTIONS = create_fy_options()
+WORKSHEETS = ['utrc_individual_user_hpc_usage', 'utrc_new_users', 'utrc_idle_users', 'utrc_suspended_users']
 
-def initialize_df(workbook_path):
-    """
-    To keep the dashboard running quickly, data should be read in only once.
-    """
-    dataframes = pd.read_excel(workbook_path, ['utrc_individual_user_hpc_usage', 'utrc_new_users', 'utrc_idle_users', 'utrc_suspended_users'])
-    for worksheet in dataframes:
-        clean_df(dataframes[worksheet])
-        if worksheet in WORKSHEETS_RM_DUPLICATES:
-            remove_duplicates(dataframes[worksheet])
-
-    return dataframes
-
-def merge_workbooks():
-    workbook_paths = get_workbook_paths('./assets/data/monthly_reports')
-    for index, path in enumerate(workbook_paths):
-        workbook = initialize_df(path)
-        filename = path.split('/')[-1]
-        workbook = append_date_to_worksheets(workbook, filename)
-
-        if index == 0:
-            dict_of_dfs = workbook
-        else:
-            for sheet in ['utrc_individual_user_hpc_usage', 'utrc_new_users', 'utrc_idle_users', 'utrc_suspended_users']:
-                dict_of_dfs[sheet] = pd.concat([dict_of_dfs[sheet], workbook[sheet]])
-
-    return dict_of_dfs
-
-DATAFRAMES = merge_workbooks()
+DATAFRAMES = merge_workbooks(WORKSHEETS)
 
 
 # CUSTOMIZE LAYOUT
@@ -82,17 +56,17 @@ layout = html.Div([
     Output('idle_users', 'children'),
     Output('total_users', 'children'),
     Input('dropdown', 'value'),
-    Input('hidden-login', 'data'),
     Input('select_institutions_checklist', 'value'),
     Input('date_filter', 'value'),
-    Input('year_radio_dcc', 'value')
+    Input('year_radio_dcc', 'value'),
+    Input('select_machine_checklist', 'value')
 )
-def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
+def update_figs(dropdown, checklist, date_range, fiscal_year, machines):
     marks = get_marks(fiscal_year)
     if ctx.triggered_id == 'year_radio_dcc':
-        df = select_df(DATAFRAMES, dropdown, checklist, [0, len(marks)], fiscal_year, authentication)
+        df = select_df(DATAFRAMES, dropdown, checklist, [0, len(marks)], fiscal_year, machines)
     else:
-        df = select_df(DATAFRAMES, dropdown, checklist, date_range, fiscal_year, authentication)
+        df = select_df(DATAFRAMES, dropdown, checklist, date_range, fiscal_year, machines)
 
     table = dash_table.DataTable(id='datatable_id',
                                  data=df.to_dict('records'),
@@ -107,7 +81,8 @@ def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
                                                 }],
                                  style_cell_conditional=create_conditional_style(df),
                                  sort_action='native',
-                                 filter_action='native'
+                                 filter_action='native',
+                                 export_format='xlsx'
                             )
     
     inst_grps = df.groupby(['Institution'])
@@ -128,10 +103,11 @@ def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
                          x="Institution",
                          color='Date',
                          barmode='group',
-                         text_auto=True
-                    ))
+                         text_auto=True,
+                         category_orders={'Institution': ['UTAus', 'UTA', 'UTD', 'UTEP', 'UTPB', 'UTRGV', 'UTSA', 'UTT', 'UTHSC-H', 'UTHSC-SA', 'UTMB', 'UTMDA', 'UTSW', 'UTSYS']}
+                    ).update_layout(yaxis_title="Number of Users"))
     
-    totals = get_totals(DATAFRAMES, checklist, date_range, fiscal_year, ['utrc_individual_user_hpc_usage', 'utrc_idle_users'])
+    totals = get_totals(DATAFRAMES, checklist, date_range, fiscal_year, ['utrc_individual_user_hpc_usage', 'utrc_idle_users'], machines)
     totals['total_users'] = totals['active_users'] + totals['idle_users']
     
     return table, bargraph, totals['active_users'], totals['idle_users'], totals['total_users']

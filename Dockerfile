@@ -10,4 +10,6 @@ WORKDIR /app
 
 EXPOSE 8050
 
+COPY . .
+
 CMD ["python", "app.py"]

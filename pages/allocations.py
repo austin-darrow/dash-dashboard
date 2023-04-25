@@ -12,40 +12,11 @@ dash.register_page(__name__)
 app = dash.get_app()
 
 # INCORPORATE DATA
-WORKSHEETS = ['utrc_active_allocations', 'utrc_individual_user_hpc_usage', 'utrc_corral_usage', 'utrc_current_allocations', 'utrc_new_allocation_requests']
+WORKSHEETS = ['utrc_active_allocations', 'utrc_current_allocations', 'utrc_new_allocation_requests']
 FY_OPTIONS = create_fy_options()
 logging.debug(f'FY Options: {FY_OPTIONS}')
 
-def initialize_df(workbook_path):
-    """
-    To keep the dashboard running quickly, data should be read in only once.
-    """
-    dataframes = pd.read_excel(workbook_path, WORKSHEETS)
-    for worksheet in dataframes:
-        clean_df(dataframes[worksheet])
-        if worksheet in WORKSHEETS_RM_DUPLICATES:
-            remove_duplicates(dataframes[worksheet])
-        if worksheet == 'utrc_active_allocations':
-            dataframes[worksheet] = calc_node_hours(dataframes[worksheet])
-
-    return dataframes
-
-def merge_workbooks():
-    workbook_paths = get_workbook_paths('./assets/data/monthly_reports')
-    for index, path in enumerate(workbook_paths):
-        workbook = initialize_df(path)
-        filename = path.split('/')[-1]
-        workbook = append_date_to_worksheets(workbook, filename)
-
-        if index == 0:
-            dict_of_dfs = workbook
-        else:
-            for sheet in WORKSHEETS:
-                dict_of_dfs[sheet] = pd.concat([dict_of_dfs[sheet], workbook[sheet]])
-
-    return dict_of_dfs
-
-DATAFRAMES = merge_workbooks()
+DATAFRAMES = merge_workbooks(WORKSHEETS)
 
 layout=html.Div([
     # TOTALS
@@ -62,8 +33,7 @@ layout=html.Div([
                         options=[
                         {'label': 'Active Allocations', 'value': 'utrc_active_allocations'},
                         {'label': 'Current Allocations', 'value': 'utrc_current_allocations'},
-                        {'label': 'New Allocations', 'value': 'utrc_new_allocation_requests'},
-                        {'label': 'Corral Usage', 'value': 'utrc_corral_usage'}
+                        {'label': 'New Allocations', 'value': 'utrc_new_allocation_requests'}
                     ],
                         value='utrc_active_allocations',
                         clearable=False
@@ -88,18 +58,18 @@ layout=html.Div([
     Output('active_allocations', 'children'),
     Output('idle_allocations', 'children'),
     Input('dropdown', 'value'),
-    Input('hidden-login', 'data'),
     Input('select_institutions_checklist', 'value'),
     Input('date_filter', 'value'),
-    Input('year_radio_dcc', 'value')
+    Input('year_radio_dcc', 'value'),
+    Input('select_machine_checklist', 'value')
 )
-def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
+def update_figs(dropdown, institutions, date_range, fiscal_year, machines):
     logging.debug(f'Callback trigger id: {ctx.triggered_id}')
     marks = get_marks(fiscal_year)
     if ctx.triggered_id == 'year_radio_dcc':
-        df = select_df(DATAFRAMES, dropdown, checklist, [0, len(marks)], fiscal_year, authentication)
+        df = select_df(DATAFRAMES, dropdown, institutions, [0, len(marks)], fiscal_year, machines)
     else:
-        df = select_df(DATAFRAMES, dropdown, checklist, date_range, fiscal_year, authentication)
+        df = select_df(DATAFRAMES, dropdown, institutions, date_range, fiscal_year, machines)
 
     table = dash_table.DataTable(id='datatable_id',
                                  data=df.to_dict('records'),
@@ -114,20 +84,25 @@ def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
                                                 }],
                                  style_cell_conditional=create_conditional_style(df),
                                  sort_action='native',
-                                 filter_action='native'
+                                 sort_by=[{'column_id': 'SU\'s Charged', 'direction': 'desc'}],
+                                 filter_action='native',
+                                 export_format='xlsx'
                             )
 
-    df_with_avgs = calc_monthly_avgs(df, checklist)
-    bargraph = dcc.Graph(figure=px.histogram(
+    df_with_avgs = calc_monthly_avgs(df, institutions)
+    bargraph = dcc.Graph(figure=px.bar(
                          data_frame=df_with_avgs,
                          x="Institution",
+                         y='Count',
                          color='Date',
                          barmode='group',
-                         text_auto=True
-                    ))
+                         text_auto=True,
+                         hover_data=['Resource'],
+                         category_orders={'Institution': ['UTAus', 'UTA', 'UTD', 'UTEP', 'UTPB', 'UTRGV', 'UTSA', 'UTT', 'UTHSC-H', 'UTHSC-SA', 'UTMB', 'UTMDA', 'UTSW', 'UTSYS']}
+                    ).update_layout(yaxis_title="Number of Allocations"))
 
     
-    totals = get_allocation_totals(DATAFRAMES, checklist, date_range, fiscal_year, ['utrc_active_allocations', 'utrc_current_allocations'])
+    totals = get_allocation_totals(DATAFRAMES, institutions, date_range, fiscal_year, ['utrc_active_allocations', 'utrc_current_allocations'], machines)
     totals['total_allocations'] = totals['idle_allocations'] + totals['active_allocations']
 
     return table, bargraph, totals['total_allocations'], totals['active_allocations'], totals['idle_allocations']

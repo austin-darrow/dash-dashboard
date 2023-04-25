@@ -8,17 +8,14 @@ html, body {
     font-family: Roboto,sans-serif;
 }
 
-/* HEADER */
-#header {
-    background-color: #222222;
+.body {
+    padding: 0.5rem 2rem;
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    height: 55px;
-    border-bottom: 1px solid #afafaf;
+    flex-direction: column;
+    gap: 1rem;
 }
 
+/* HEADER */
 #header2 {
     background-color: #222222;
     display: flex;
@@ -32,70 +29,22 @@ html, body {
     font-size: 1.5rem;
 }
 
-#login-form {
-    margin-left: auto;
-    margin-right: 30px;
-    display: flex;
-    gap: 2rem;
-    justify-content: center;
-    align-items: center;
-}
-
-#login {
-    background-color: #222222;
-    border: none;
-    height: 30px;
-    width: 90px;
-    color: #ffffff;
-    font-size: 1.25rem;
-}
-
-#username, #password {
-    border-radius: 4px;
-    height: 30px;
-    width: 12rem;
-    padding-left: 1rem;
-    font-size: 1.25rem;
-    color: black;
-}
-
-#login:hover, #username:hover, #password:hover {
-    font-size: 1.35rem;
-}
-
 #header2>a {
     color: #ffffff;
     text-decoration: none;
 }
 
 #header2>a:hover {
-    font-size: 1.6rem;
+    transform: scale(1.1);
     color: #ffffff;
-}
-
-.header-img {
-    height: 26px;
 }
 
 .utrc-logo {
     height: 44px;
 }
 
-.branding-seperator {
-    width: 1px;
-    height: 100%;
-    max-height: 24px;
-    border-left: 1px solid #ffffff;
-    margin: 0 15px;
-    vertical-align: middle;
-}
-
-/* OVERALL BODY STYLING */
-.body {
-    padding: 0.5rem 2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+.utrc-logo:hover {
+    transform: scale(1);
 }
 
 /* ==================SPECIFIC BODY COMPONENTS================== */
@@ -105,7 +54,7 @@ html, body {
     border: 1px solid #222222;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 6px;
     color: #ffffff;
     background-color: #222222;
     font-size: 1.25rem;
@@ -113,8 +62,7 @@ html, body {
     border-radius: 8px;
 }
 
-/* Select Institutions Checklist */
-#select_institutions_div {
+.filter_div {
     border: 1px solid #222222;
     padding: 0.75rem;
     background-color: #ffffff;
@@ -122,32 +70,70 @@ html, body {
     font-size: 1rem;
 }
 
-#select_institutions_checklist {
+/* Tooltip container */
+.tooltip {
+    position: relative;
+    display: inline-block;
+    height: 1rem;
+    width: 1rem;
+    border: 1px solid black;
+    border-radius: 20px;
     display: flex;
-    gap: 1rem;
-}
-
-/* Fiscal Year Selector */
-#year_radio_box {
-    border: 1px solid #222222;
-    padding: 1rem;
-    background-color: #ffffff;
-    color: #222222;
+    justify-content: center;
+    align-items: center;
+    font-size: .9rem;
+    background-color: #222222;
+    color: #fff;
+  }
+  
+  /* Tooltip text */
+  .tooltip .tooltiptext {
+    visibility: hidden;
+    width: 600px;
+    background-color: #222222;
     font-size: 1rem;
-}
+    color: #fff;
+    text-align: left;
+    padding: 5px;
+    padding-left: 20px;
+    border-radius: 8px;
+   
+    /* Position the tooltip text - see examples below! */
+    position: absolute;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+  }
+  
+  /* Show the tooltip text when you mouse over the tooltip container */
+  .tooltip:hover .tooltiptext {
+    visibility: visible;
+  }
+  
+  .tooptip p:after{
+      width:100%;
+      height:auto;
+      content:'';
+      position: absolute;
+      top:-40px;
+      left:0;
+  }
+  
+  .single_line_checklist {
+      display: flex;
+      flex-direction: row;
+      gap: 15px;
+  }
+  
+  .select-all {
+      font-weight: 700;
+  }
 
+#select_institutions_checklist,
+#select_machine_checklist,
 #year_radio_dcc {
     display: flex;
     gap: 1rem;
-}
-
-/* Date Range Selector */
-#date_range_selector {
-    border: 1px solid #222222;
-    padding: 1rem;
-    background-color: #ffffff;
-    color: #222222;
-    font-size: 1rem;
 }
 
 /* DataTable */
@@ -208,4 +194,21 @@ th.dash-header.column-0 {
     font-size: 1.75rem;
     color: gainsboro;
     border-bottom: 1px solid #ffffff;
+}
+
+button {
+    background-color: #888888;
+    color: #ffffff;
+    height: 2.25rem;
+    font-size: 1.1rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #757575;
+    margin-right: auto;
+    box-shadow: 3px 3px 10px #888888;
+}
+
+button:hover {
+    background-color: black;
+    transform: scale(1.02);
 }

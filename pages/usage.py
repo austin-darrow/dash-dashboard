@@ -14,42 +14,13 @@ app = dash.get_app()
 # INCORPORATE DATA
 WORKSHEETS = ['utrc_active_allocations', 'utrc_corral_usage']
 
-def initialize_df(workbook_path):
-    """
-    To keep the dashboard running quickly, data should be read in only once.
-    """
-    dataframes = pd.read_excel(workbook_path, WORKSHEETS)
-    for worksheet in dataframes:
-        clean_df(dataframes[worksheet])
-        if worksheet in WORKSHEETS_RM_DUPLICATES:
-            remove_duplicates(dataframes[worksheet])
-        if worksheet == 'utrc_active_allocations':
-            dataframes[worksheet] = calc_node_hours(dataframes[worksheet])
-
-    return dataframes
-
-def merge_workbooks():
-    workbook_paths = get_workbook_paths('./assets/data/monthly_reports')
-    for index, path in enumerate(workbook_paths):
-        workbook = initialize_df(path)
-        filename = path.split('/')[-1]
-        workbook = append_date_to_worksheets(workbook, filename)
-
-        if index == 0:
-            dict_of_dfs = workbook
-        else:
-            for sheet in WORKSHEETS:
-                dict_of_dfs[sheet] = pd.concat([dict_of_dfs[sheet], workbook[sheet]])
-
-    return dict_of_dfs
-
-DATAFRAMES = merge_workbooks()
+DATAFRAMES = merge_workbooks(WORKSHEETS)
 
 layout=html.Div([
     # TOTALS
     html.Div([
-            html.Div([html.Div(["Sum SUs Used (All Machines)"], className='counter_title'), html.Div([0], id='total_sus')], className="total_counters"),
-            html.Div([html.Div(["Sum Corral Storage Allocated (TB)"], className='counter_title'), html.Div([0], id='total_storage')], className="total_counters"),
+            html.Div([html.Div(["Sum SUs Used"], className='counter_title'), html.Div([0], id='total_sus')], className="total_counters"),
+            html.Div([html.Div(["Peak Storage Allocated (TB)"], className='counter_title'), html.Div([0], id='total_storage')], className="total_counters"),
         ], id='total_counters_wrapper'),
     # END TOTALS
 
@@ -84,18 +55,18 @@ layout=html.Div([
     Output('total_sus', 'children'),
     Output('total_storage', 'children'),
     Input('dropdown', 'value'),
-    Input('hidden-login', 'data'),
     Input('select_institutions_checklist', 'value'),
     Input('date_filter', 'value'),
-    Input('year_radio_dcc', 'value')
+    Input('year_radio_dcc', 'value'),
+    Input('select_machine_checklist', 'value')
 )
-def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
+def update_figs(dropdown, institutions, date_range, fiscal_year, machines):
     logging.debug(f'Callback trigger id: {ctx.triggered_id}')
     marks = get_marks(fiscal_year)
     if ctx.triggered_id == 'year_radio_dcc':
-        df = select_df(DATAFRAMES, dropdown, checklist, [0, len(marks)], fiscal_year, authentication)
+        df = select_df(DATAFRAMES, dropdown, institutions, [0, len(marks)], fiscal_year, machines)
     else:
-        df = select_df(DATAFRAMES, dropdown, checklist, date_range, fiscal_year, authentication)
+        df = select_df(DATAFRAMES, dropdown, institutions, date_range, fiscal_year, machines)
 
     table = dash_table.DataTable(id='datatable_id',
                                  data=df.to_dict('records'),
@@ -110,11 +81,15 @@ def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
                                                 }],
                                  style_cell_conditional=create_conditional_style(df),
                                  sort_action='native',
-                                 filter_action='native'
+                                 sort_by=[{'column_id': 'SU\'s Charged', 'direction': 'desc'},
+                                          {'column_id': 'Storage Granted (Gb)', 'direction': 'desc'},
+                                          {'column_id': 'Institution', 'direction': 'asc'}],
+                                 filter_action='native',
+                                 export_format='xlsx'
                             )
     
-    sus_df = select_df(DATAFRAMES, 'utrc_active_allocations', checklist, date_range, fiscal_year, authentication)
-    sus_df_calculated = calc_node_monthly_sums(sus_df, checklist, "SU's Charged")
+    sus_df = select_df(DATAFRAMES, 'utrc_active_allocations', institutions, date_range, fiscal_year, machines)
+    sus_df_calculated = calc_node_monthly_sums(sus_df, institutions)
     total_sus = int(sus_df["SU's Charged"].sum())
     node_graph = dcc.Graph(figure=px.bar(
                            data_frame=sus_df_calculated,
@@ -122,19 +97,22 @@ def update_figs(dropdown, authentication, checklist, date_range, fiscal_year):
                            y="SU's Charged",
                            color='Date',
                            barmode='group',
-                           text_auto=True
-                        ))
+                           text_auto=True,
+                           hover_data=['Resource'],
+                           category_orders={'Institution': ['UTAus', 'UTA', 'UTD', 'UTEP', 'UTPB', 'UTRGV', 'UTSA', 'UTT', 'UTHSC-H', 'UTHSC-SA', 'UTMB', 'UTMDA', 'UTSW', 'UTSYS']}
+                    ))
     
-    corral_df = select_df(DATAFRAMES, 'utrc_corral_usage', checklist, date_range, fiscal_year, authentication)
-    corral_df_calculated = calc_node_monthly_sums(corral_df, checklist, "Storage Granted (TB)")
-    total_storage = (int(round(corral_df["Storage Granted (Gb)"].sum() / 1024.0)))
+    corral_df = select_df(DATAFRAMES, 'utrc_corral_usage', institutions, date_range, fiscal_year, machines)
+    corral_df_calculated = calc_corral_monthly_sums(corral_df, institutions)
+    total_storage = calc_corral_total(corral_df, institutions)
     corral_graph = dcc.Graph(figure=px.bar(
                            data_frame=corral_df_calculated,
                            x='Institution',
                            y="Storage Granted (TB)",
                            color='Date',
                            barmode='group',
-                           text_auto=True
-                        ))
+                           text_auto=True,
+                           category_orders={'Institution': ['UTAus', 'UTA', 'UTD', 'UTEP', 'UTPB', 'UTRGV', 'UTSA', 'UTT', 'UTHSC-H', 'UTHSC-SA', 'UTMB', 'UTMDA', 'UTSW', 'UTSYS']}
+                    ))
     
     return table, node_graph, corral_graph, "{:,}".format(total_sus), "{:,}".format(total_storage)

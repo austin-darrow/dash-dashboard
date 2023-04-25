@@ -1,67 +1,126 @@
 import dash
-from dash import html, dcc, Input, Output, State, ctx
+import dash_auth
+from dash import html, dcc, Input, Output, ctx, State
 import logging
-from src.authenticator import authenticate
 from src.data_cleanup import create_fy_options, get_marks
+import json
 
 logging.basicConfig(level=logging.DEBUG)
 
 FY_OPTIONS = create_fy_options()
 
+INSTITUTION_HOVER = "UTAus: The University of Texas at Austin\n\
+UTA: The University of Texas at Arlington\n\
+UTD: The University of Texas at Dallas\n\
+UTEP: The University of Texas at El Paso\n\
+UTPB: The University of Texas Permian Basin\n\
+UTRGV: The University of Texas Rio Grande Valley\n\
+UTSA: The University of Texas at San Antonio\n\
+UTT: The University of Texas at Tyler\n\
+UTHSC-H: The University of Texas Health Science Center-Houston\n\
+UTHSC-SA: The University of Texas Health Science Center-San Antonio\n\
+UTMB: The University of Texas Medical Branch\n\
+UTMDA: The University of Texas MD Anderson Cancer Center\n\
+UTSW: The University of Texas Southwestern\n\
+UTSYS: The University of Texas Systems"
+
 app = dash.Dash(__name__, use_pages=True, prevent_initial_callbacks='initial_duplicate',
 		suppress_callback_exceptions=True, title='UTRC Dashboard')
 
+with open('./assets/data/accounts.txt') as f:
+			data = f.read()
+			ACCOUNTS = json.loads(data)
+dash_auth.BasicAuth(app, ACCOUNTS)
+
 app.layout = html.Div([
-    # html.Div(
-    #     [html.A(html.Img(src='./assets/images/tacc-white.png', className='header-img'), href='https://www.tacc.utexas.edu/'),
-    #      html.Span(className='branding-seperator'),
-    #      html.A(html.Img(src='./assets/images/utaustin-white.png', className='header-img'), href='https://www.utexas.edu/')
-    #     ],
-    #     id='header'
-    # ),
     html.Div(
         [
-	    #  html.A(html.Img(src='./assets/images/utrc-horizontal-logo-white-simple.svg', className='utrc-logo'), href='https://utrc.tacc.utexas.edu/'),
+	     html.A(html.Img(src='./assets/images/utrc-horizontal-logo-white-simple.svg', className='utrc-logo'), href='https://utrc.tacc.utexas.edu/'),
          html.A("Users", href='/'),
 		 html.A("Allocations", href='/allocations'),
 		 html.A("Usage", href='/usage'),
-         html.Div([
-            dcc.Input(id='username', type='text', placeholder='username'),
-            dcc.Input(id='password', type='text', placeholder='password'),
-            html.Button('Log in', id='login', n_clicks=0)], id='login-form'),
 	    ],
         id='header2'
 	),
-	dcc.Store(id='hidden-login', storage_type='local'),
 	html.Div([
+	html.Button('Toggle Filters', id='toggle-filters', n_clicks=0),
 	html.Div([
-            "Select Filters",
             html.Div([
                 "By institution:",
-                dcc.Checklist(
+                html.Div([
+                html.Div(["?", html.Span(html.P(children=["UTAus: The University of Texas at Austin", html.Br(), 
+                                                "UTA: The University of Texas at Arlington", html.Br(), 
+                                                "UTD: The University of Texas at Dallas", html.Br(), 
+                                                "UTEP: The University of Texas at El Paso", html.Br(), 
+                                                "UTPB: The University of Texas Permian Basin", html.Br(), 
+                                                "UTRGV: The University of Texas Rio Grande Valley", html.Br(), 
+                                                "UTSA: The University of Texas at San Antonio", html.Br(), 
+                                                "UTT: The University of Texas at Tyler", html.Br(), 
+                                                "UTHSC-H: The University of Texas Health Science Center-Houston", html.Br(),
+                                                "UTHSC-SA: The University of Texas Health Science Center-San Antonio", html.Br(), 
+                                                "UTMB: The University of Texas Medical Branch", html.Br(), 
+                                                "UTMDA: The University of Texas MD Anderson Cancer Center", html.Br(), 
+                                                "UTSW: The University of Texas Southwestern Medical Center", html.Br(), 
+                                                "UTSYS: The University of Texas Systems"]),
+						                 className='tooltiptext')
+					    ], className='tooltip'),
+			    dcc.Checklist(
+                        id="all-or-none-inst",
+                        options=[{"label": "Select All", "value": "All"}],
+                        value=[],
+                        className='select-all'
+                    ),
+	            dcc.Checklist(
                     id='select_institutions_checklist',
                     options=[
-                        {'label': 'UTA', 'value': 'UTA'},
                         {'label': 'UTAus', 'value': 'UTAus'},
+                        {'label': 'UTA', 'value': 'UTA'},
                         {'label': 'UTD', 'value': 'UTD'},
                         {'label': 'UTEP', 'value': 'UTEP'},
+			            {'label': 'UTPB', 'value': 'UTPB'},
+				        {'label': 'UTRGV', 'value': 'UTRGV'},
+                        {'label': 'UTSA', 'value': 'UTSA'},
+			            {'label': 'UTT', 'value': 'UTT'},
                         {'label': 'UTHSC-H', 'value': 'UTHSC-H'},
                         {'label': 'UTHSC-SA', 'value': 'UTHSC-SA'},
                         {'label': 'UTMB', 'value': 'UTMB'},
                         {'label': 'UTMDA', 'value': 'UTMDA'},
-                        {'label': 'UTPB', 'value': 'UTPB'},
-                        {'label': 'UTRGV', 'value': 'UTRGV'},
-                        {'label': 'UTSA', 'value': 'UTSA'},
                         {'label': 'UTSW', 'value': 'UTSW'}, 
-                        {'label': 'UTSYS', 'value': 'UTSYS'},
-                        {'label': 'UTT', 'value': 'UTT'}
+                        {'label': 'UTSYS', 'value': 'UTSYS'}
                     ],
-                    value=['UTA', 'UTAus', 'UTHSC-SA', 'UTSW', 'UTHSC-H', 'UTMDA', 'UTRGV', 'UTMB', 'UTD', 'UTSA', 'UTEP', 'UTT', 'UTSYS', 'UTPB'],
+                    value=['UTA', 'UTHSC-SA', 'UTSW', 'UTHSC-H', 'UTMDA', 'UTRGV', 'UTMB', 'UTD', 'UTSA', 'UTEP', 'UTT', 'UTSYS', 'UTPB'],
                     persistence=True,
                     persistence_type='session'
-                ),
-            ], id='select_institutions_div'),
+                ),], className='single_line_checklist'),
+            ], id='select_institutions_div', className='filter_div'),
 
+            html.Div([
+                "By machine:",
+                html.Div([
+                dcc.Checklist(
+                        id="all-or-none-machine",
+                        options=[{"label": "Select All", "value": "All"}],
+                        value=["All"],
+                        className='select-all'
+                    ),
+                dcc.Checklist(
+                    id='select_machine_checklist',
+                    options=[
+                        {'label': 'Lonestar6', 'value': 'Lonestar6'},
+                        {'label': 'Frontera', 'value': 'Frontera'},
+                        {'label': 'Longhorn3', 'value': 'Longhorn3'},
+                        {'label': 'Stampede4', 'value': 'Stampede4'},
+			            {'label': 'Lonestar5', 'value': 'Lonestar5'},
+				        {'label': 'Maverick3', 'value': 'Maverick3'},
+                        {'label': 'Jetstream', 'value': 'Jetstream'},
+			            {'label': 'Hikari', 'value': 'Hikari'}
+                    ],
+                    value=['Lonestar6', 'Frontera', 'Longhorn3', 'Stampede4', 'Lonestar5', 'Maverick3', 'Jetstream', 'Hikari'],
+                    persistence=True,
+                    persistence_type='session'
+                ),], className='single_line_checklist'),
+            ], id='select_machine_div', className='filter_div'),
+	    
             html.Div([
                 "By fiscal year:",
                 dcc.RadioItems(id='year_radio_dcc',
@@ -69,7 +128,7 @@ app.layout = html.Div([
 							   value='21-22',
 							   inline=True,
 							   persistence=True,
-                    		   persistence_type='session')], id='year_radio_box'),
+                    		   persistence_type='session')], id='year_radio_box', className='filter_div'),
 
             html.Div([
                 "By month:",
@@ -92,31 +151,43 @@ app.layout = html.Div([
                                 max=11,
 								persistence=True,
                     			persistence_type='session')
-            ], id='date_range_selector'),], id='filters'),
-	dash.page_container], className='body'),
+            ], id='date_range_selector', className='filter_div'),], id='filters', style={'display':''}),
+	dash.page_container], className='body')
 ])
 
 for page in dash.page_registry.values():
 	logging.debug((f"{page['name']} - {page['path']}"))
-	
 
 @app.callback(
-	Output('hidden-login', 'data'),
-	Output('login-form', 'children'),
-	Input('login', 'n_clicks'),
-	State('username', 'value'),
-	State('password', 'value')
+    Output('filters', 'style'),
+    Input('toggle-filters', 'n_clicks'),
+    State('filters', 'style'), prevent_initial_call=True
 )
-def login(n_clicks, username, password):
-	form = [dcc.Input(id='username', type='text', placeholder='username'),
-			dcc.Input(id='password', type='text', placeholder='password'),
-			html.Button('Log in', id='login', n_clicks=0)]
-	if n_clicks is not None:
-		authentication = authenticate(username, password)
-		if authentication == True:
-			return authentication, ""
-		else:
-		    return authentication, form
+def toggle_filters(click, state):
+    if state == {'display':'none'}:
+        return {'display':''}
+    else:
+        return {'display':'none'}
+
+@app.callback(
+    Output("select_institutions_checklist", "value"),
+    [Input("all-or-none-inst", "value")],
+    [State("select_institutions_checklist", "options")], prevent_initial_call=True,
+)
+def select_all_none(all_selected, options):
+    all_or_none = []
+    all_or_none = [option["value"] for option in options if all_selected]
+    return all_or_none
+
+@app.callback(
+    Output("select_machine_checklist", "value"),
+    [Input("all-or-none-machine", "value")],
+    [State("select_machine_checklist", "options")], prevent_initial_call=True,
+)
+def select_all_none(all_selected, options):
+    all_or_none = []
+    all_or_none = [option["value"] for option in options if all_selected]
+    return all_or_none
 
 
 @app.callback(
@@ -140,6 +211,5 @@ def update_date_range(date_range, fiscal_year):
                                        step=None, marks=marks, min=0, max=len(marks)-1)]
 	return slider_children
 
-
 if __name__ == '__main__':
-	app.run(host='0.0.0.0')
+	app.run(host='0.0.0.0', debug=True)
