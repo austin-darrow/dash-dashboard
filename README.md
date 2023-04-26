@@ -33,17 +33,6 @@ server {
                 proxy_pass http://localhost:8050;
         }
 }
-server {
-        listen 8051;
-        listen [::]:8051;
-
-        # Change to domain name
-        server_name 129.114.38.28;
-
-        location / {
-                proxy_pass http://localhost:8051;
-        }
-}
 ```
 5. Install Python libraries.
 ```
@@ -56,8 +45,8 @@ docker compose up --build -d
 
 Updating Instructions
 ------------
-1. Make changes inside the app directory
-2. While inside the main app directory, stop and restart the docker compose service
+1. Make changes inside the app directory.
+2. While inside the main app directory, stop and restart the docker compose service.
 ```
 docker compose stop
 docker compose up --build -d
