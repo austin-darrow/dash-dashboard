@@ -5,9 +5,9 @@ The application serves two separate dashboards--a full version containing sensit
 The full web app is currently hosted [here](http://129.114.38.28). Login is required.
 The lite web app is currently hosted [here](http://129.114.38.28:8051).
 
-Installation / Update
+Installation Instructions
 ------------
-1. On your local PC, pull the application files from the [GitHub repository](https://github.com/austin-darrow/dash-dashboard).
+1. On your VM, pull the application files from the [GitHub repository](https://github.com/austin-darrow/dash-dashboard).
 ```
 git clone git@github.com:austin-darrow/dash-dashboard.git
 ```
@@ -19,12 +19,7 @@ git clone git@github.com:austin-darrow/dash-dashboard.git
     "username2": "password2"
 }
 ```
-4. Build the image and push to DockerHub.
-```
-docker build -t austindarrow/dashboard:1.0 .
-docker push austindarrow/dashboard:1.0
-```
-5. On the VM, setup the Nginx web server configuration file to reverse proxy at port 8050.
+4. Setup the Nginx web server configuration file to reverse proxy at port 8050 and 8051.
 ```
 # /etc/nginx/sites-available/dashboard.conf
 server {
@@ -38,12 +33,32 @@ server {
                 proxy_pass http://localhost:8050;
         }
 }
+server {
+        listen 8051;
+        listen [::]:8051;
+
+        # Change to domain name
+        server_name 129.114.38.28;
+
+        location / {
+                proxy_pass http://localhost:8051;
+        }
+}
 ```
-6. Pull the docker image from DockerHub.
+5. Install Python libraries.
 ```
-docker pull austindarrow/dashboard:1.0
+pip install -r requirements.txt
 ```
-7. Start the docker image, send it to the background, and exit the VM.
+6. Start the applications.
 ```
-docker run --rm -p 8050:8050 austindarrow/dashboard:1.0 && bg && exit
+docker compose up --build -d
+```
+
+Updating Instructions
+------------
+1. Make changes inside the app directory
+2. While inside the main app directory, stop and restart the docker compose service
+```
+docker compose stop
+docker compose up --build -d
 ```
