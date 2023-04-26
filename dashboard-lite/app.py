@@ -1,12 +1,6 @@
 import dash
 from dash import html, dcc, Input, Output, ctx, State
 import logging
-import os
-
-os.system("cp -rf ../assets .")
-os.system("cp -rf ../src .")
-os.system("cp ../requirements.txt .")
-
 from src.scripts import create_fy_options, get_marks
 
 logging.basicConfig(level=logging.INFO)
