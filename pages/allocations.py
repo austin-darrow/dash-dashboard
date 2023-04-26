@@ -3,7 +3,7 @@ import plotly.express as px
 
 import dash
 from dash import dcc, Output, Input, html, dash_table, ctx
-from scripts import *
+from src.scripts import *
 import logging
 
 logging.basicConfig(level=logging.INFO)

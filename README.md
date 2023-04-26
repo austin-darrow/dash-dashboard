@@ -1,6 +1,9 @@
 This application pulls user and system allocation/usage data from the Texas Advanced Computing Center ([TACC](https://tacc.utexas.edu)) Allocation System ([TAS](https://tacc.utexas.edu/use-tacc/allocations/)) database. Data is retrieved in monthly .xlsl files. Then, using the [Pandas](https://pandas.pydata.org/docs/) and [Plotly Dash](https://dash.plotly.com/) external Python libraries, an [Nginx](https://www.nginx.com/) web server, and a TACC-partitioned VM, it creates a visual, interactive data dashboard with filters, charts, and graphs.
 
-The web app is currently hosted [here](http://129.114.38.28). Login is required.
+The application serves two separate dashboards--a full version containing sensitive internal user data, and a lite version that only displays overall trends.
+
+The full web app is currently hosted [here](http://129.114.38.28). Login is required.
+The lite web app is currently hosted [here](http://129.114.38.28:8051).
 
 Installation / Update
 ------------

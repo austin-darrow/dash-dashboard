@@ -2,9 +2,10 @@ import pandas as pd
 import plotly.express as px
 
 import dash
-from dash import dcc, Output, Input, html, dash_table, ctx
-from src.scripts import *
+from dash import dcc, Output, Input, html, ctx
 import logging
+
+from src.scripts import *
 
 logging.basicConfig(level=logging.INFO)
 
@@ -38,10 +39,8 @@ layout=html.Div([
                         value='utrc_active_allocations',
                         clearable=False
                 ),
-        ],),
+        ], hidden=True),
     # END DROPDOWN
-
-    html.Div(children=[], id='usage_table', className='my_tables'),
 
     dcc.Location(id='url'),
 
@@ -49,7 +48,6 @@ layout=html.Div([
 
 # ADD INTERACTIVITY THROUGH CALLBACKS
 @app.callback(
-    Output('usage_table', 'children'),
     Output('node_graph', 'children'),
     Output('corral_graph', 'children'),
     Output('total_sus', 'children'),
@@ -67,32 +65,13 @@ def update_figs(dropdown, institutions, date_range, fiscal_year, machines):
         df = select_df(DATAFRAMES, dropdown, institutions, [0, len(marks)], fiscal_year, machines)
     else:
         df = select_df(DATAFRAMES, dropdown, institutions, date_range, fiscal_year, machines)
-
-    table = dash_table.DataTable(id='datatable_id',
-                                 data=df.to_dict('records'),
-                                 columns=[{"name": i, "id": i} for i in df.columns],
-                                 fixed_rows={'headers': True},
-                                 page_size=200,
-                                 style_header={'backgroundColor': '#222222', 'text_align': 'center'},
-                                 style_cell={'text_align': 'left'},
-                                 style_data_conditional=[{
-                                                    'if': {'row_index': 'odd'},
-                                                    'backgroundColor': '#f4f4f4',
-                                                }],
-                                 style_cell_conditional=create_conditional_style(df),
-                                 sort_action='native',
-                                 sort_by=[{'column_id': 'SU\'s Charged', 'direction': 'desc'},
-                                          {'column_id': 'Storage Granted (Gb)', 'direction': 'desc'},
-                                          {'column_id': 'Institution', 'direction': 'asc'}],
-                                 filter_action='native',
-                                 export_format='xlsx'
-                            )
     
     sus_df = select_df(DATAFRAMES, 'utrc_active_allocations', institutions, date_range, fiscal_year, machines)
     sus_df_calculated = calc_node_monthly_sums(sus_df, institutions)
     total_sus = int(sus_df["SU's Charged"].sum())
     node_graph = dcc.Graph(figure=px.bar(
                            data_frame=sus_df_calculated,
+                           title='SU Usage',
                            x='Institution',
                            y="SU's Charged",
                            color='Date',
@@ -107,6 +86,7 @@ def update_figs(dropdown, institutions, date_range, fiscal_year, machines):
     total_storage = calc_corral_total(corral_df, institutions)
     corral_graph = dcc.Graph(figure=px.bar(
                            data_frame=corral_df_calculated,
+                           title='Corral Storage Allocation',
                            x='Institution',
                            y="Storage Granted (TB)",
                            color='Date',
@@ -115,4 +95,4 @@ def update_figs(dropdown, institutions, date_range, fiscal_year, machines):
                            category_orders={'Institution': ['UTAus', 'UTA', 'UTD', 'UTEP', 'UTPB', 'UTRGV', 'UTSA', 'UTT', 'UTHSC-H', 'UTHSC-SA', 'UTMB', 'UTMDA', 'UTSW', 'UTSYS']}
                     ))
     
-    return table, node_graph, corral_graph, "{:,}".format(total_sus), "{:,}".format(total_storage)
+    return node_graph, corral_graph, "{:,}".format(total_sus), "{:,}".format(total_storage)

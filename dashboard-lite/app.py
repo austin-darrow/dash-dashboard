@@ -1,9 +1,13 @@
 import dash
-import dash_auth
 from dash import html, dcc, Input, Output, ctx, State
 import logging
+import os
+
+os.system("cp -rf ../assets .")
+os.system("cp -rf ../src .")
+os.system("cp ../requirements.txt .")
+
 from src.scripts import create_fy_options, get_marks
-import json
 
 logging.basicConfig(level=logging.INFO)
 
@@ -26,11 +30,6 @@ UTSYS: The University of Texas Systems"
 
 app = dash.Dash(__name__, use_pages=True, prevent_initial_callbacks='initial_duplicate',
 		suppress_callback_exceptions=True, title='UTRC Dashboard')
-
-with open('./assets/data/accounts.txt') as f:
-			data = f.read()
-			ACCOUNTS = json.loads(data)
-dash_auth.BasicAuth(app, ACCOUNTS)
 
 app.layout = html.Div([
     html.Div(
@@ -212,4 +211,4 @@ def update_date_range(date_range, fiscal_year):
 	return slider_children
 
 if __name__ == '__main__':
-	app.run(host='0.0.0.0')
+	app.run(host='0.0.0.0', port=8051)
