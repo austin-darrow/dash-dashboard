@@ -3,24 +3,11 @@ from dash import html, dcc, Input, Output, ctx, State
 import logging
 from src.scripts import create_fy_options, get_marks
 
-logging.basicConfig(level=logging.INFO)
+from config import settings
+LOGGING_LEVEL = settings['LOGGING_LEVEL']
+logging.basicConfig(level=LOGGING_LEVEL)
 
 FY_OPTIONS = create_fy_options()
-
-INSTITUTION_HOVER = "UTAus: The University of Texas at Austin\n\
-UTA: The University of Texas at Arlington\n\
-UTD: The University of Texas at Dallas\n\
-UTEP: The University of Texas at El Paso\n\
-UTPB: The University of Texas Permian Basin\n\
-UTRGV: The University of Texas Rio Grande Valley\n\
-UTSA: The University of Texas at San Antonio\n\
-UTT: The University of Texas at Tyler\n\
-UTHSC-H: The University of Texas Health Science Center-Houston\n\
-UTHSC-SA: The University of Texas Health Science Center-San Antonio\n\
-UTMB: The University of Texas Medical Branch\n\
-UTMDA: The University of Texas MD Anderson Cancer Center\n\
-UTSW: The University of Texas Southwestern\n\
-UTSYS: The University of Texas Systems"
 
 app = dash.Dash(__name__, use_pages=True, prevent_initial_callbacks='initial_duplicate',
 		suppress_callback_exceptions=True, title='UTRC Dashboard')
@@ -205,4 +192,4 @@ def update_date_range(date_range, fiscal_year):
 	return slider_children
 
 if __name__ == '__main__':
-	app.run(host='0.0.0.0', port=8051)
+    app.run(host='0.0.0.0', port=8051, debug=settings['DEBUG_MODE'])

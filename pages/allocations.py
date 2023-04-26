@@ -6,7 +6,9 @@ from dash import dcc, Output, Input, html, dash_table, ctx
 from src.scripts import *
 import logging
 
-logging.basicConfig(level=logging.INFO)
+from config import settings
+LOGGING_LEVEL = settings['LOGGING_LEVEL']
+logging.basicConfig(level=LOGGING_LEVEL)
 
 dash.register_page(__name__)
 app = dash.get_app()

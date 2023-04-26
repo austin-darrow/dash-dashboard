@@ -14,5 +14,6 @@ COPY assets assets
 COPY src src
 COPY dashboard-lite/pages pages
 COPY dashboard-lite/app.py .
+COPY config.py .
 
 CMD ["python", "app.py"]
